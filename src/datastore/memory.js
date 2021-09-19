@@ -13,35 +13,54 @@ const memoryDatastoreProvider = (seedModelsByModelName ={}) => {
     }, {})
 
 
-  const save = (tableName, modelName, obj) => () => {
+  const save = (tableName, modelName, obj) => {
     return Promise.resolve()
       // eslint-disable-next-line no-undef,functional/immutable-data
-      .then(() => { db[modelName][obj.id] = obj })
+      .then(() => { 
+        if (!(modelName in db)) {
+          db[modelName] = {}
+        }
+        db[modelName][obj.id] = obj 
+      })
+  }
+
+  const deleteObj = (tableName, modelName, obj) => {
+    return Promise.resolve()
+      // eslint-disable-next-line no-undef,functional/immutable-data
+      .then(() => { 
+        delete db[modelName][obj.id]
+      })
   }
 
   const retrieve = (tableName, modelName, id) => {
     return Promise.resolve()
       .then(() => {
-        return get(db, `${modelName}.[${id}]`, undefined)
+        const key = `${modelName}.${id}`
+        return get(db, key, undefined)
       })
   }
 
   const search = (tableName, modelName, ormQuery) => {
-    return Promise.resolves()
+    return Promise.resolve()
       .then(() => {
         const fieldQueries = ormQuery.fields
-        const insensitiveQueries = values(pickBy(fieldQueries, ([value, key]) => value.caseInsensitive === true))
-        const caseSensitiveQueries = values(pickBy(fieldQueries, ([value, key]) => value.caseInsensitive === true))
-        return db[modelName]
-          .pickBy(([obj, id]) => {
-            if (insensitiveQueries.find(i => i.value.localeCompare(obj[i.name], undefined, { sensitivity: 'accent' }))) {
+        const insensitiveQueries = values(pickBy(fieldQueries, (value, key) => value.options.caseSensitive === false))
+        const caseSensitiveQueries = values(pickBy(fieldQueries, (value, key) => value.options.caseSensitive === true))
+        if (!(modelName in db)) {
+          return []
+        }
+        const models = db[modelName]
+        return values(pickBy(models,
+          (obj, id) => {
+            if (insensitiveQueries.find(i => 
+              i.value.localeCompare(obj[i.name], undefined, { sensitivity: 'accent' }) === 0)) {
               return true
             }
-            if (caseSensitiveQueries.find(i => i.value === obj[i.name])) {
+            if (caseSensitiveQueries.find(i => i.value === obj[i.name]) === 0) {
               return true
             }
             return false
-          })
+          }))
       })
   }
 
@@ -49,6 +68,7 @@ const memoryDatastoreProvider = (seedModelsByModelName ={}) => {
     search,
     retrieve,
     save,
+    delete: deleteObj,
   }
 }
 
