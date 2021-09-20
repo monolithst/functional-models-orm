@@ -40,6 +40,7 @@
   },
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
+    "functional-models": "^1.0.10",
     "lodash": "^4.17.21"
   }
 }

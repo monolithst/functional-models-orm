@@ -6,8 +6,6 @@ Feature: Basic orm functionality
     When an instance of the model is created with ModelData1
     And save is called on the model
     And the datastore's retrieve is called with values
-      | tableName | Model1  | 
-      | modelName | Model1  | 
       | id        | test-id | 
     Then the result matches ModelData1 
 
@@ -18,8 +16,6 @@ Feature: Basic orm functionality
     And save is called on the model
     And delete is called on the model
     And the datastore's retrieve is called with values
-      | tableName | Model1  | 
-      | modelName | Model1  | 
       | id        | test-id | 
     Then the result matches undefined 
 

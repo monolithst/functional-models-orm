@@ -1,24 +1,23 @@
 const merge = require('lodash/merge')
 
-const compile = (queryData) => () => {
-  return queryData.reduce((acc, partial) => {
-    if (partial.type === 'field') {
-      return merge(
-        acc,
-        { fields: {[partial.name]: partial}}
-      )
-    }
-    return acc
-  }, {fields: {}})
+const compile = queryData => () => {
+  return queryData.reduce(
+    (acc, partial) => {
+      if (partial.type === 'property') {
+        return merge(acc, { properties: { [partial.name]: partial } })
+      }
+      return acc
+    },
+    { properties: {} }
+  )
 }
 
-
-const ormQueryBuilderAndOr = (queryData) => {
+const ormQueryBuilderAndOr = queryData => {
   const and = () => {
-    return ormQueryBuilder([...queryData, { type: 'and' }] )
+    return ormQueryBuilder([...queryData, { type: 'and' }])
   }
   const or = () => {
-    return ormQueryBuilder([...queryData, { type: 'or' }] )
+    return ormQueryBuilder([...queryData, { type: 'or' }])
   }
   return {
     compile: compile(queryData),
@@ -27,23 +26,27 @@ const ormQueryBuilderAndOr = (queryData) => {
   }
 }
 
-const ormQueryBuilder = (queryData=[]) => {
-  const field = (name, value, {caseSensitive=false}={}) => {
-    return ormQueryBuilderAndOr([...queryData, {
-      type: 'field',
-      name,
-      value,
-      options: {
-        caseSensitive
-      }}])
+const ormQueryBuilder = (queryData = []) => {
+  const property = (name, value, { caseSensitive = false } = {}) => {
+    return ormQueryBuilderAndOr([
+      ...queryData,
+      {
+        type: 'property',
+        name,
+        value,
+        options: {
+          caseSensitive,
+        },
+      },
+    ])
   }
 
   return {
     compile: compile(queryData),
-    field,
+    property,
   }
 }
 
 module.exports = {
-  ormQueryBuilder
+  ormQueryBuilder,
 }

@@ -1,56 +1,37 @@
-const get = require('lodash/get')
 const merge = require('lodash/merge')
 
-const {
-  Model: originalModel 
-} = require('functional-models')
+const { Model: originalModel } = require('functional-models')
 
-const _getDefaultModelName = (modelName) => {
-  return modelName.toLowerCase().replace(' ', '-').replace('_', '-')
-}
-
-const _getOrmModelProperties = (modelName, keyToProperty) => {
-  const tableName = get(keyToProperty, 'meta.tableName', _getDefaultModelName(modelName))
-  return {
-    ormSettings: {
-      tableName,
-    }
-  }
-}
-
+const isDirtyFalse = () => false
+const isDirtyTrue = () => false
 
 const orm = ({ datastoreProvider }) => {
-
   const Model = (modelName, keyToProperty, additionalModelProperties) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
     It has been intentionally decided that recreating the model each and every time for each database retrieve is
     too much cost to obtain "functional purity". This could always be reverted back.
     */
+    // eslint-disable-next-line functional/no-let
     let model = null
 
-    const ormModelProperties = _getOrmModelProperties(modelName, keyToProperty)
-    const _retrievedObjToModel = (obj) => {
-      const data = merge(
-        {},
-        obj,
-        {
-          meta: {
-            dirty: false
-          }
-        })
+    const _retrievedObjToModel = obj => {
+      const data = merge({}, obj, {
+        meta: {
+          isDirty: isDirtyFalse,
+        },
+      })
       return model.create(data)
     }
 
-    const retrieve = async (id) => {
-      const tableName = ormModelProperties.ormSettings.tableName
-      const obj = await datastoreProvider.retrieve(tableName, modelName, id)
+    const retrieve = async id => {
+      const obj = await datastoreProvider.retrieve(model, id)
       return _retrievedObjToModel(obj)
     }
 
-    const search = (ormQuery) => {
-      const tableName = ormModelProperties.ormSettings.tableName
-      return datastoreProvider.search(tableName, modelName, ormQuery)
+    const search = ormQuery => {
+      return datastoreProvider
+        .search(model, ormQuery)
         .then(results => results.map(_retrievedObjToModel))
     }
 
@@ -60,49 +41,42 @@ const orm = ({ datastoreProvider }) => {
     })
     const instanceProperties = {
       meta: {
-        dirty: true
+        isDirty: isDirtyTrue,
       },
     }
-    const newKeyToProperty = merge(
-      {},
-      keyToProperty,
-      instanceProperties
-    )
+    const newKeyToProperty = merge({}, keyToProperty, instanceProperties)
     const callBacks = {
-      instanceCreatedCallback: (instance) => {
+      instanceCreatedCallback: instance => {
         const deleteObj = async () => {
-          return Promise.resolve()
-            .then(async () => {
-              const tableName = ormModelProperties.ormSettings.tableName
-              const obj = await instance.functions.toObj()
-              await datastoreProvider.delete(tableName, modelName, obj)
-            })
-
+          return Promise.resolve().then(async () => {
+            await datastoreProvider.delete(instance)
+          })
         }
 
         const save = async () => {
-          return Promise.resolve()
-            .then(async () => {
-              const tableName = ormModelProperties.ormSettings.tableName
-              if (instance.functions.validate.model().length > 0) {
-                throw new Error(`Cannot save model. Validation errors exist.`)
-              }
-              const obj = await instance.functions.toObj()
-              await datastoreProvider.save(tableName, modelName, obj)
-              return _retrievedObjToModel(obj)
-            })
+          return Promise.resolve().then(async () => {
+            if (instance.functions.validate.model().length > 0) {
+              throw new Error(`Cannot save model. Validation errors exist.`)
+            }
+            const savedObj = await datastoreProvider.save(instance)
+            return _retrievedObjToModel(savedObj)
+          })
         }
         // eslint-disable-next-line functional/immutable-data
         instance.functions.save = save
+        // eslint-disable-next-line functional/immutable-data
         instance.functions.delete = deleteObj
-      }
+      },
     }
-    model = originalModel(modelName, newKeyToProperty, modelProperties, callBacks)
-
-    return merge(
-      {},
-      model,
+    // eslint-disable-next-line functional/immutable-data
+    model = originalModel(
+      modelName,
+      newKeyToProperty,
+      modelProperties,
+      callBacks
     )
+
+    return merge({}, model)
   }
 
   return {
