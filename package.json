@@ -12,6 +12,14 @@
     "type": "git",
     "url": "git+https://github.com/monolithst/functional-models-orm.git"
   },
+  "nyc": {
+    "all": true,
+    "exclude": [
+      "coverage/",
+      "features/stepDefinitions/*",
+      "test/*"
+    ]
+  },
   "keywords": [
     "orm",
     "javascript",
