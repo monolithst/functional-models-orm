@@ -132,15 +132,29 @@ describe('/src/orm.js', () => {
           })
         })
       })
+      describe('#retrieve()', () => {
+        it('should pass the model and id to the datastoreProvider.search', async () => {
+          const datastoreProvider = {
+            retrieve: sinon.stub().resolves(null),
+          }
+          const instance = orm({ datastoreProvider, modelObj: Model })
+          const model = instance.Model('MyModel', {}, {})
+          const id = 123
+          await model.retrieve(id)
+          const actual = datastoreProvider.retrieve.getCall(0).args
+          const expected = [model, id]
+          assert.deepEqual(actual, expected)
+        })
+      })
       describe('#search()', () => {
-        it('should pass the model and ormQuery to the datastoreProvider.search', () => {
+        it('should pass the model and ormQuery to the datastoreProvider.search', async () => {
           const datastoreProvider = {
             search: sinon.stub().resolves([]),
           }
           const instance = orm({ datastoreProvider, modelObj: Model })
           const model = instance.Model('MyModel', {}, {})
           const ormQuery = { test: 'me' }
-          model.search(ormQuery)
+          await model.search(ormQuery)
           const actual = datastoreProvider.search.getCall(0).args
           const expected = [model, ormQuery]
           assert.deepEqual(actual, expected)

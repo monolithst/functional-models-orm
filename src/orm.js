@@ -31,7 +31,15 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     return _retrievedObjToModel(model)(obj)
   }
 
-  const Model = (modelName, keyToProperty, additionalModelProperties) => {
+  const Model = (
+    modelName,
+    keyToProperty,
+    {
+      instanceCreatedCallback = null,
+      modelFunctions = {},
+      instanceFunctions = {},
+    } = {}
+  ) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
     It has been intentionally decided that recreating the model each and every time for each database retrieve is
@@ -40,16 +48,12 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     // eslint-disable-next-line functional/no-let
     let model = null
 
-    const search = ormQuery => {
+    const search = model => ormQuery => {
       return datastoreProvider
         .search(model, ormQuery)
         .then(results => results.map(_retrievedObjToModel(model)))
     }
 
-    const modelProperties = merge({}, additionalModelProperties, {
-      retrieve: retrieve(model),
-      search,
-    })
     const instanceProperties = {
       meta: {
         isDirty: isDirtyTrue,
@@ -78,10 +82,23 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
         instance.functions.save = save
         // eslint-disable-next-line functional/immutable-data
         instance.functions.delete = deleteObj
+        if (instanceCreatedCallback) {
+          instanceCreatedCallback(instance)
+        }
       },
     }
     // eslint-disable-next-line functional/immutable-data
-    model = modelObj(modelName, newKeyToProperty, modelProperties, callBacks)
+    model = modelObj(modelName, newKeyToProperty,
+      {
+        instanceCreatedCallback: callBacks.instanceCreatedCallback,
+        modelFunctions: {
+          ...modelFunctions,
+          retrieve,
+          search,
+        },
+        instanceFunctions,
+      }
+    )
 
     return merge({}, model)
   }
