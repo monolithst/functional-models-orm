@@ -72,7 +72,13 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
           return Promise.resolve().then(async () => {
             const valid = await instance.functions.validate.model()
             if (Object.keys(valid).length > 0) {
-              throw new Error(`Cannot save ${modelName}. Validation errors ${Object.entries(valid).map(([k,v]) => `${k}:${v.join(',')}` ).join(';')}}.`)
+              throw new Error(
+                `Cannot save ${modelName}. Validation errors ${Object.entries(
+                  valid
+                )
+                  .map(([k, v]) => `${k}:${v.join(',')}`)
+                  .join(';')}}.`
+              )
             }
             const savedObj = await datastoreProvider.save(instance)
             return _retrievedObjToModel(model)(savedObj)
@@ -88,17 +94,15 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
       },
     }
     // eslint-disable-next-line functional/immutable-data
-    model = modelObj(modelName, newKeyToProperty,
-      {
-        instanceCreatedCallback: callBacks.instanceCreatedCallback,
-        modelFunctions: {
-          ...modelFunctions,
-          retrieve,
-          search,
-        },
-        instanceFunctions,
-      }
-    )
+    model = modelObj(modelName, newKeyToProperty, {
+      instanceCreatedCallback: callBacks.instanceCreatedCallback,
+      modelFunctions: {
+        ...modelFunctions,
+        retrieve,
+        search,
+      },
+      instanceFunctions,
+    })
 
     return merge({}, model)
   }
