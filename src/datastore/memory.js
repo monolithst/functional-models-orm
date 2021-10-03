@@ -77,7 +77,7 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
         return []
       }
       const models = db[modelName]
-      return values(
+      const results = values(
         pickBy(models, (obj, _) => {
           if (
             insensitiveQueries.find(
@@ -95,6 +95,10 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
           return false
         })
       )
+      return {
+        models: results,
+        page: null,
+      }
     })
   }
 

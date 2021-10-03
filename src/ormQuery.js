@@ -1,10 +1,14 @@
 const merge = require('lodash/merge')
 
 const compile = queryData => () => {
+  // TODO: This does not handle AND/OR at all.
   return queryData.reduce(
     (acc, partial) => {
       if (partial.type === 'property') {
         return merge(acc, { properties: { [partial.name]: partial } })
+      }
+      if (partial.type === 'page') {
+        return merge(acc, { page: partial.value })
       }
       return acc
     },
@@ -36,7 +40,19 @@ const ormQueryBuilder = (queryData = []) => {
         value,
         options: {
           caseSensitive,
+          startsWith: false,
+          endsWith: false,
         },
+      },
+    ])
+  }
+
+  const pagination = value => {
+    return ormQueryBuilderAndOr([
+      ...queryData,
+      {
+        type: 'page',
+        value,
       },
     ])
   }
@@ -44,6 +60,7 @@ const ormQueryBuilder = (queryData = []) => {
   return {
     compile: compile(queryData),
     property,
+    pagination,
   }
 }
 
