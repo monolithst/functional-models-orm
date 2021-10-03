@@ -1,5 +1,5 @@
 const merge = require('lodash/merge')
-
+const get = require('lodash/get')
 const { Model: functionalModel } = require('functional-models')
 
 const isDirtyFalse = () => false
@@ -34,11 +34,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
   const Model = (
     modelName,
     keyToProperty,
-    {
-      instanceCreatedCallback = null,
-      modelFunctions = {},
-      instanceFunctions = {},
-    } = {}
+    modelOptions={},
   ) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
@@ -93,21 +89,20 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
         instance.functions.save = save
         // eslint-disable-next-line functional/immutable-data
         instance.functions.delete = deleteObj
-        if (instanceCreatedCallback) {
-          instanceCreatedCallback(instance)
+        if (modelOptions.instanceCreatedCallback) {
+          modelOptions.instanceCreatedCallback(instance)
         }
       },
     }
-    // eslint-disable-next-line functional/immutable-data
-    model = modelObj(modelName, newKeyToProperty, {
+    const mergedModelOptions = merge({}, modelOptions, {
       instanceCreatedCallback: callBacks.instanceCreatedCallback,
       modelFunctions: {
-        ...modelFunctions,
+        ...get(modelOptions,'modelFunctions', {}),
         retrieve,
         search,
       },
-      instanceFunctions,
     })
+    model = modelObj(modelName, newKeyToProperty, mergedModelOptions)
 
     return merge({}, model)
   }
