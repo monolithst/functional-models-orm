@@ -74,7 +74,10 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
         )
       )
       if (!(modelName in db)) {
-        return []
+        return {
+          instances: [],
+          page: null,
+        }
       }
       const models = db[modelName]
       const results = values(

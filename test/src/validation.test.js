@@ -221,8 +221,9 @@ describe('/src/validation.js', () => {
         name: 'my-name'
       })
       const instanceData = await instance.functions.toObj()
-      const actual = await uniqueTogether(['name'])(instance, instanceData)
-      assert.isOk(actual)
+      const actual = await uniqueTogether(['name', 'description'])(instance, instanceData)
+      const expected = `name,description must be unique together. Another instance found.`
+      assert.deepEqual(actual, expected)
     })
 
   })
