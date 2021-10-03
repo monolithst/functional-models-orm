@@ -96,7 +96,7 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
         })
       )
       return {
-        models: results,
+        instances: results,
         page: null,
       }
     })

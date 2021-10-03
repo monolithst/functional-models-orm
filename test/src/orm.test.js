@@ -149,7 +149,7 @@ describe('/src/orm.js', () => {
       describe('#search()', () => {
         it('should pass the model and ormQuery to the datastoreProvider.search', async () => {
           const datastoreProvider = {
-            search: sinon.stub().resolves([]),
+            search: sinon.stub().resolves({ page: null, instances: [] }),
           }
           const instance = orm({ datastoreProvider, modelObj: Model })
           const model = instance.Model('MyModel', {}, {})

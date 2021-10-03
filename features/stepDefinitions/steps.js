@@ -118,5 +118,5 @@ Then('the result matches {word}', function (dataKey) {
 })
 
 Then('{int} search results are found', function (count) {
-  assert.equal(this.searchResults.length, count)
+  assert.equal(this.searchResults.instances.length, count)
 })

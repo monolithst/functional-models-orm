@@ -51,9 +51,9 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     const search = model => ormQuery => {
       return datastoreProvider
         .search(model, ormQuery)
-        .then(({ models, page }) => {
+        .then(({ instances, page }) => {
           return {
-            models: models.map(_retrievedObjToModel(model)),
+            instances: instances.map(_retrievedObjToModel(model)),
             page,
           }
         })
