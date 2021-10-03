@@ -31,11 +31,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     return _retrievedObjToModel(model)(obj)
   }
 
-  const Model = (
-    modelName,
-    keyToProperty,
-    modelOptions={},
-  ) => {
+  const Model = (modelName, keyToProperty, modelOptions = {}) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
     It has been intentionally decided that recreating the model each and every time for each database retrieve is
@@ -45,14 +41,12 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     let model = null
 
     const search = model => ormQuery => {
-      return datastoreProvider
-        .search(model, ormQuery)
-        .then((result) => {
-          return {
-            instances: result.instances.map(_retrievedObjToModel(model)),
-            page: result.page,
-          }
-        })
+      return datastoreProvider.search(model, ormQuery).then(result => {
+        return {
+          instances: result.instances.map(_retrievedObjToModel(model)),
+          page: result.page,
+        }
+      })
     }
 
     const instanceProperties = {
@@ -97,7 +91,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     const mergedModelOptions = merge({}, modelOptions, {
       instanceCreatedCallback: callBacks.instanceCreatedCallback,
       modelFunctions: {
-        ...get(modelOptions,'modelFunctions', {}),
+        ...get(modelOptions, 'modelFunctions', {}),
         retrieve,
         search,
       },
