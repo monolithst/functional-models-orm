@@ -14,14 +14,15 @@ const _doUniqueCheck = async (
   if (resultsLength < 1) {
     return undefined
   }
+  const ids = await Promise.all(results.instances.map(x=>x.getId()))
   // We have our match by id.
-  if (resultsLength === 1 && results.instances[0].id === instanceData.id) {
+  if (ids.length === 1 && ids[0] === instanceData.id) {
     return undefined
   }
-  if (resultsLength > 1) {
+  if (ids.length > 1) {
     // This is a weird but possible case where there is more than one item. We don't want to error
     // if the instance we are checking is already in the datastore.
-    if (results.instances.find(x => x.id === instanceData.id)) {
+    if (ids.find(x => x === instanceData.id)) {
       return undefined
     }
   }
@@ -40,9 +41,11 @@ const uniqueTogether = propertyKeyArray => async (instance, instanceData) => {
     })
   )(ormQuery.ormQueryBuilder()).compile()
   return _doUniqueCheck(query, instance, instanceData, () => {
-    return `${propertyKeyArray.join(
-      ','
-    )} must be unique together. Another instance found.`
+    return propertyKeyArray.length > 1
+      ? `${propertyKeyArray.join(
+        ','
+      )} must be unique together. Another instance found.`
+      : `${propertyKeyArray[0]} must be unique. Another instance found.`
   })
 }
 
