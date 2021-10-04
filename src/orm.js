@@ -5,7 +5,10 @@ const { Model: functionalModel } = require('functional-models')
 const isDirtyFalse = () => false
 const isDirtyTrue = () => true
 
-const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
+const orm = ({
+  datastoreProvider,
+  modelObj = functionalModel
+}) => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }
@@ -31,7 +34,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     return _retrievedObjToModel(model)(obj)
   }
 
-  const Model = (modelName, keyToProperty, modelOptions = {}) => {
+  const Model = (modelName, keyToProperty, modelOptions = {}, ...args) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
     It has been intentionally decided that recreating the model each and every time for each database retrieve is
@@ -96,9 +99,8 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
         search,
       },
     })
-    model = modelObj(modelName, newKeyToProperty, mergedModelOptions)
-
-    return merge({}, model)
+    model = modelObj(modelName, newKeyToProperty, mergedModelOptions, ...args)
+    return model
   }
 
   return {
