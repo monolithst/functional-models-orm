@@ -5,10 +5,7 @@ const { Model: functionalModel } = require('functional-models')
 const isDirtyFalse = () => false
 const isDirtyTrue = () => true
 
-const orm = ({
-  datastoreProvider,
-  modelObj = functionalModel
-}) => {
+const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }

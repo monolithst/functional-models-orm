@@ -9,11 +9,17 @@ const _getDbEntryInfo = async instance => {
   return [modelName, obj]
 }
 
-const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
+const memoryDatastoreProvider = (
+  seedModelsByModelName = {},
+  { primaryKey = 'id' } = {}
+) => {
+  if (!primaryKey) {
+    throw new Error(`Configuration must include primary key.`)
+  }
   const db = Object.entries(seedModelsByModelName).reduce(
     (acc, [modelName, models]) => {
       const data = models.reduce((inner, model) => {
-        return { ...inner, [model.id]: model }
+        return { ...inner, [model[primaryKey]]: model }
       }, {})
       return merge({}, acc, { [modelName]: data })
     },
@@ -31,7 +37,7 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
             db[modelName] = {}
           }
           // eslint-disable-next-line functional/immutable-data
-          db[modelName][obj.id] = obj
+          db[modelName][obj[primaryKey]] = obj
           return obj
         })
     )
@@ -44,7 +50,7 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
         .then(async () => {
           const [modelName, obj] = await _getDbEntryInfo(instance)
           // eslint-disable-next-line no-undef,functional/immutable-data
-          delete db[modelName][obj.id]
+          delete db[modelName][obj[primaryKey]]
         })
     )
   }
@@ -58,8 +64,8 @@ const memoryDatastoreProvider = (seedModelsByModelName = {}) => {
   }
 
   const search = (model, ormQuery) => {
-    const modelName = model.getName()
     return Promise.resolve().then(() => {
+      const modelName = model.getName()
       const propertyQueries = ormQuery.properties
       const insensitiveQueries = values(
         pickBy(

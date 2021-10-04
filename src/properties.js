@@ -7,16 +7,16 @@ const _defaultPropertyConfig = {
   uniqueTogether: null,
 }
 
-const ormPropertyConfig = (config=_defaultPropertyConfig) => {
+const ormPropertyConfig = (config = _defaultPropertyConfig) => {
   return merge(config, {
     validators: [
       ...(config.validators ? config.validators : []),
       config.unique ? unique(config.unique) : null,
-      config.uniqueTogether ? uniqueTogether(config.uniqueTogether) : null
-    ].filter(identity)
+      config.uniqueTogether ? uniqueTogether(config.uniqueTogether) : null,
+    ].filter(identity),
   })
 }
 
 module.exports = {
-  ormPropertyConfig
+  ormPropertyConfig,
 }

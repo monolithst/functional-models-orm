@@ -23,7 +23,7 @@ describe('/src/validation.js', () => {
         name: 'my-name',
       })
       const instanceData = await instance.functions.toObj()
-      await unique('name')(instance, instanceData)
+      await unique('name')('my-name', instance, instanceData)
 
       sinon.assert.calledOnce(model.search)
     })
@@ -43,7 +43,7 @@ describe('/src/validation.js', () => {
         name: 'my-name',
       })
       const instanceData = await instance.functions.toObj()
-      const actual = await unique('name')(instance, instanceData)
+      const actual = await unique('name')('my-name', instance, instanceData)
       assert.isOk(actual)
     })
     it('should return undefined when 1 instance is returned with the same id and same value', async () => {
@@ -62,7 +62,7 @@ describe('/src/validation.js', () => {
         name: 'my-name',
       })
       const instanceData = await instance.functions.toObj()
-      const actual = await unique('name')(instance, instanceData)
+      const actual = await unique('name')('name', instance, instanceData)
       assert.isUndefined(actual)
     })
     it('should return undefined when 2 instances are returned with one having the same id and same value', async () => {
@@ -85,7 +85,7 @@ describe('/src/validation.js', () => {
         name: 'my-name',
       })
       const instanceData = await instance.functions.toObj()
-      const actual = await unique('name')(instance, instanceData)
+      const actual = await unique('name')('name', instance, instanceData)
       assert.isUndefined(actual)
     })
     it('should return an error when 2 instances are returned with none having the same id but having the same value', async () => {
@@ -108,7 +108,7 @@ describe('/src/validation.js', () => {
         name: 'my-name',
       })
       const instanceData = await instance.functions.toObj()
-      const actual = await unique('name')(instance, instanceData)
+      const actual = await unique('name')('name', instance, instanceData)
       assert.isOk(actual)
     })
   })

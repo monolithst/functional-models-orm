@@ -14,7 +14,9 @@ const _doUniqueCheck = async (
   if (resultsLength < 1) {
     return undefined
   }
-  const ids = await Promise.all(results.instances.map(x=>x[model.getPrimaryKeyName()]))
+  const ids = await Promise.all(
+    results.instances.map(x => x[model.getPrimaryKeyName()])
+  )
   // We have our match by id.
   if (ids.length === 1 && ids[0] === instanceData.id) {
     return undefined
@@ -43,13 +45,13 @@ const uniqueTogether = propertyKeyArray => async (instance, instanceData) => {
   return _doUniqueCheck(query, instance, instanceData, () => {
     return propertyKeyArray.length > 1
       ? `${propertyKeyArray.join(
-        ','
-      )} must be unique together. Another instance found.`
+          ','
+        )} must be unique together. Another instance found.`
       : `${propertyKeyArray[0]} must be unique. Another instance found.`
   })
 }
 
-const unique = propertyKey => async (instance, instanceData) => {
+const unique = propertyKey => async (value, instance, instanceData) => {
   return uniqueTogether([propertyKey])(instance, instanceData)
 }
 
