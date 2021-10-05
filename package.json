@@ -4,7 +4,7 @@
   "description": "A basic ORM building library using the functional-models library.",
   "main": "index.js",
   "scripts": {
-    "test": "nyc --all mocha --recursive ./test/**/*.test.js",
+    "test": "nyc --all mocha --recursive './test/**/*.test.js'",
     "feature-tests": "./node_modules/@cucumber/cucumber/bin/cucumber-js",
     "coverage": "nyc --all --reporter=lcov npm test"
   },

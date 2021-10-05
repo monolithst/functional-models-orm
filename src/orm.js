@@ -65,7 +65,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
 
         const save = async () => {
           return Promise.resolve().then(async () => {
-            const valid = await instance.functions.validate.model()
+            const valid = await instance.functions.validate()
             if (Object.keys(valid).length > 0) {
               throw new Error(
                 `Cannot save ${modelName}. Validation errors ${Object.entries(

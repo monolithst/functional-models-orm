@@ -89,12 +89,13 @@ const memoryDatastoreProvider = (
       const results = values(
         pickBy(models, (obj, _) => {
           if (
-            insensitiveQueries.find(
-              i =>
+            insensitiveQueries.find(i => {
+              return (
                 i.value.localeCompare(obj[i.name], undefined, {
                   sensitivity: 'accent',
                 }) === 0
-            )
+              )
+            })
           ) {
             return true
           }

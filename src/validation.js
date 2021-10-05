@@ -18,41 +18,48 @@ const _doUniqueCheck = async (
     results.instances.map(x => x[model.getPrimaryKeyName()])
   )
   // We have our match by id.
-  if (ids.length === 1 && ids[0] === instanceData.id) {
+  const instanceId = instanceData[model.getPrimaryKeyName()]
+  if (ids.length === 1 && ids[0] === instanceId) {
     return undefined
   }
   if (ids.length > 1) {
     // This is a weird but possible case where there is more than one item. We don't want to error
     // if the instance we are checking is already in the datastore.
-    if (ids.find(x => x === instanceData.id)) {
+    if (ids.find(x => x === instanceId)) {
       return undefined
     }
   }
   return buildErrorMessage()
 }
 
-const uniqueTogether = propertyKeyArray => async (instance, instanceData) => {
-  const properties = propertyKeyArray.map(key => {
-    return [key, instanceData[key]]
-  })
-  const query = flow(
-    properties.map(([key, value]) => {
-      return b => {
-        return b.property(key, value, { caseSensitive: false }).and()
-      }
+const uniqueTogether = propertyKeyArray => {
+  const _uniqueTogether = async (instance, instanceData) => {
+    const properties = propertyKeyArray.map(key => {
+      return [key, instanceData[key]]
     })
-  )(ormQuery.ormQueryBuilder()).compile()
-  return _doUniqueCheck(query, instance, instanceData, () => {
-    return propertyKeyArray.length > 1
-      ? `${propertyKeyArray.join(
-          ','
-        )} must be unique together. Another instance found.`
-      : `${propertyKeyArray[0]} must be unique. Another instance found.`
-  })
+    const query = flow(
+      properties.map(([key, value]) => {
+        return b => {
+          return b.property(key, value, { caseSensitive: false }).and()
+        }
+      })
+    )(ormQuery.ormQueryBuilder()).compile()
+    return _doUniqueCheck(query, instance, instanceData, () => {
+      return propertyKeyArray.length > 1
+        ? `${propertyKeyArray.join(
+            ','
+          )} must be unique together. Another instance found.`
+        : `${propertyKeyArray[0]} must be unique. Another instance found.`
+    })
+  }
+  return _uniqueTogether
 }
 
-const unique = propertyKey => async (value, instance, instanceData) => {
-  return uniqueTogether([propertyKey])(instance, instanceData)
+const unique = propertyKey => {
+  const _unique = async (value, instance, instanceData) => {
+    return uniqueTogether([propertyKey])(instance, instanceData)
+  }
+  return _unique
 }
 
 module.exports = {
