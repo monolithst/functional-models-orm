@@ -2,6 +2,7 @@ const assert = require('chai').assert
 const sinon = require('sinon')
 const createDatastore = require('../../src/datastore/memory')
 const orm = require('../../src/orm')
+const { LastModifiedDateProperty } = require('../../src/properties')
 const { Model, TextProperty, UniqueId } = require('functional-models')
 
 describe('/src/orm.js', () => {
@@ -18,17 +19,17 @@ describe('/src/orm.js', () => {
         const instance = orm({ datastoreProvider })
       })
     })
-    it('should create an object without exception if a datastoreProvider and a modelObj is passed', () => {
+    it('should create an object without exception if a datastoreProvider and a Model is passed', () => {
       const datastoreProvider = createDatastore()
       assert.doesNotThrow(() => {
-        const instance = orm({ datastoreProvider, modelObj: Model })
+        const instance = orm({ datastoreProvider, Model })
       })
     })
 
     describe('#Model()', () => {
-      it('should pass the modelname to the modelObj', () => {
+      it('should pass the modelname to the Model', () => {
         const datastoreProvider = createDatastore()
-        const instance = orm({ datastoreProvider, modelObj: Model })
+        const instance = orm({ datastoreProvider, Model })
         const model = instance.Model('MyModel', {}, {})
         const actual = model.getName()
         const expected = 'MyModel'
@@ -36,18 +37,54 @@ describe('/src/orm.js', () => {
       })
       it('should have functions.search', () => {
         const datastoreProvider = createDatastore()
-        const instance = orm({ datastoreProvider, modelObj: Model })
+        const instance = orm({ datastoreProvider, Model })
         const model = instance.Model('MyModel', {}, {})
         const actual = model.search
         assert.isFunction(actual)
       })
+      it('should allow not passing a modelOptions', () => {
+        const datastoreProvider = createDatastore()
+        const instance = orm({ datastoreProvider, Model })
+        assert.doesNotThrow(() => {
+          instance.Model('MyModel', {})
+        })
+      })
       describe('#create()', () => {
+        it('should call the modelOptions.instanceCreatedCallback that is passed in', () => {
+          const datastoreProvider = createDatastore()
+          const instanceCreatedCallback = sinon.stub()
+          const instance = orm({ datastoreProvider })
+          const model = instance.Model(
+            'MyModel',
+            {},
+            { instanceCreatedCallback }
+          )
+          model.create({})
+          sinon.assert.calledOnce(instanceCreatedCallback)
+        })
+        it('should return an instance where meta.isDirty === true', async () => {
+          const datastoreProvider = {
+            save: sinon.stub().returns({ name: 'my-name' }),
+          }
+          const instance = orm({ datastoreProvider, Model })
+          const model = instance.Model(
+            'MyModel',
+            {
+              name: TextProperty({ required: true }),
+            },
+            {}
+          )
+          const actual = model.create({
+            name: 'my-name',
+          })
+          assert.isTrue(actual.meta.isDirty())
+        })
         describe('#delete()', () => {
           it('should call datastoreProvider.delete with the model and id', async () => {
             const datastoreProvider = {
               delete: sinon.stub().resolves({}),
             }
-            const instance = orm({ datastoreProvider, modelObj: Model })
+            const instance = orm({ datastoreProvider, Model })
             const model = instance.Model(
               'MyModel',
               {
@@ -67,16 +104,32 @@ describe('/src/orm.js', () => {
           })
         })
         describe('#save()', () => {
+          it('should change lastModified field from "old-date" when lastModifiedUpdateMethod exists on a property', async () => {
+            const datastoreProvider = sinon.spy(createDatastore())
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model(
+              'MyModel',
+              {
+                lastModified: LastModifiedDateProperty(),
+              },
+              {}
+            )
+            const modelInstance = model.create({ lastModified: 'old-date' })
+            const newModel = await modelInstance.functions.save()
+            const actual = await newModel.getLastModified()
+            const expected = 'old-date'
+            assert.notEqual(actual, expected)
+          })
           it('should have a functions.save function', () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, modelObj: Model })
+            const instance = orm({ datastoreProvider, Model })
             const model = instance.Model('MyModel', {}, {})
             const modelInstance = model.create({})
             assert.isFunction(modelInstance.functions.save)
           })
           it('should throw an exception if the model has validation errors and save is called', () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, modelObj: Model })
+            const instance = orm({ datastoreProvider, Model })
             const model = instance.Model(
               'MyModel',
               {
@@ -96,7 +149,7 @@ describe('/src/orm.js', () => {
             const datastoreProvider = {
               save: sinon.stub().returns({ name: 'my-name' }),
             }
-            const instance = orm({ datastoreProvider, modelObj: Model })
+            const instance = orm({ datastoreProvider, Model })
             const model = instance.Model(
               'MyModel',
               {
@@ -116,7 +169,7 @@ describe('/src/orm.js', () => {
             const datastoreProvider = {
               save: sinon.stub().returns({ name: 'my-name' }),
             }
-            const instance = orm({ datastoreProvider, modelObj: Model })
+            const instance = orm({ datastoreProvider, Model })
             const model = instance.Model(
               'MyModel',
               {
@@ -137,7 +190,7 @@ describe('/src/orm.js', () => {
           const datastoreProvider = {
             retrieve: sinon.stub().resolves(null),
           }
-          const instance = orm({ datastoreProvider, modelObj: Model })
+          const instance = orm({ datastoreProvider, Model })
           const model = instance.Model('MyModel', {}, {})
           const id = 123
           await model.retrieve(id)
@@ -151,7 +204,7 @@ describe('/src/orm.js', () => {
           const datastoreProvider = {
             search: sinon.stub().resolves({ page: null, instances: [] }),
           }
-          const instance = orm({ datastoreProvider, modelObj: Model })
+          const instance = orm({ datastoreProvider, Model })
           const model = instance.Model('MyModel', {}, {})
           const ormQuery = { test: 'me' }
           await model.search(ormQuery)
@@ -166,7 +219,7 @@ describe('/src/orm.js', () => {
         const datastoreProvider = {
           retrieve: sinon.stub().resolves(undefined),
         }
-        const instance = orm({ datastoreProvider, modelObj: Model })
+        const instance = orm({ datastoreProvider, Model })
         const model = instance.Model('MyModel', {}, {})
         await instance.fetcher(model, 'my-id')
 
@@ -181,7 +234,7 @@ describe('/src/orm.js', () => {
             name: 'my-name',
           }),
         }
-        const instance = orm({ datastoreProvider, modelObj: Model })
+        const instance = orm({ datastoreProvider, Model })
         const model = instance.Model(
           'MyModel',
           {

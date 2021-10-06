@@ -15,7 +15,7 @@ const _doUniqueCheck = async (
     return undefined
   }
   const ids = await Promise.all(
-    results.instances.map(x => x[model.getPrimaryKeyName()])
+    results.instances.map(x => x.functions.getPrimaryKey())
   )
   // We have our match by id.
   const instanceId = instanceData[model.getPrimaryKeyName()]

@@ -99,14 +99,17 @@ const memoryDatastoreProvider = (
           ) {
             return true
           }
-          if (caseSensitiveQueries.find(i => i.value === obj[i.name]) === 0) {
+          if (caseSensitiveQueries.find(i => i.value === obj[i.name])) {
             return true
           }
           return false
         })
       )
+      const instances = ormQuery.take
+        ? results.slice(0, ormQuery.take)
+        : results
       return {
-        instances: results,
+        instances,
         page: null,
       }
     })

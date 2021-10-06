@@ -6,7 +6,7 @@ const { uniqueTogether, unique } = require('../../src/validation')
 
 const createTestModel1 = () =>
   Model('TestModel1', {
-    id: TextProperty({ value: 'test-id' }),
+    id: TextProperty({ defaultValue: 'test-id' }),
     name: TextProperty(),
     description: TextProperty(),
   })
@@ -31,10 +31,10 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -50,10 +50,10 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -69,14 +69,14 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             name: 'my-name',
-          },
-          {
+          }),
+          model.create({
             id: 'test-id',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -92,14 +92,14 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             name: 'my-name',
-          },
-          {
+          }),
+          model.create({
             id: 'test-id-something-else',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -157,11 +157,11 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             name: 'my-name',
             description: 'my-description',
-          },
+          }),
         ],
         page: null,
       })
@@ -178,11 +178,11 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id',
             description: 'my-description',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -199,16 +199,16 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             description: 'my-description',
             name: 'my-name',
-          },
-          {
+          }),
+          model.create({
             id: 'test-id',
             description: 'my-description',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })
@@ -225,16 +225,16 @@ describe('/src/validation.js', () => {
       const model = createTestModel1()
       model.search = sinon.stub().resolves({
         instances: [
-          {
+          model.create({
             id: 'test-id-older',
             description: 'my-description',
             name: 'my-name',
-          },
-          {
+          }),
+          model.create({
             id: 'test-id-something-else',
             description: 'my-description',
             name: 'my-name',
-          },
+          }),
         ],
         page: null,
       })

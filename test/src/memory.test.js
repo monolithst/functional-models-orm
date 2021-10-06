@@ -9,6 +9,11 @@ const TEST_MODEL1 = Model('TestModel1', {
 
 describe('/src/datastore/memory.js', () => {
   describe('#()', () => {
+    it('should throw an exception when primaryKey is set to null', () => {
+      assert.throws(() => {
+        datastore({}, { primaryKey: null })
+      })
+    })
     it('should not cause an exception with no arguments', () => {
       assert.doesNotThrow(() => {
         datastore()
@@ -20,7 +25,131 @@ describe('/src/datastore/memory.js', () => {
       })
     })
 
-    describe('#search()', () => {})
+    describe('#search()', () => {
+      it('should return no instances when there is no modelName in the db', async () => {
+        const datastoreProvider = datastore({})
+        const actual = (await datastoreProvider.search(TEST_MODEL1, {}))
+          .instances
+        const expected = []
+        assert.deepEqual(actual, expected)
+      })
+      it('should find one instance when using an insensitive search', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [{ id: '123', name: 'unit-test' }],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'Unit-Test',
+                options: {
+                  caseSensitive: false,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [{ id: '123', name: 'unit-test' }]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find no instances when using a caseSensitive search', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [{ id: '123', name: 'unit-test' }],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'Unit-Test',
+                options: {
+                  caseSensitive: true,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = []
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 1 instance when using a caseSensitive search', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [{ id: '123', name: 'unit-test' }],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'unit-test',
+                options: {
+                  caseSensitive: true,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [{ id: '123', name: 'unit-test' }]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 1 instance when using a caseSensitive search even though there are two objects', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '123', name: 'unit-test' },
+            { id: '234', name: 'unit-test-2' },
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'unit-test',
+                options: {
+                  caseSensitive: true,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [{ id: '123', name: 'unit-test' }]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 2 instances when when take is "2" and there are three matches', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '123', name: 'unit-test' },
+            { id: '234', name: 'unit-test' },
+            { id: '345', name: 'unit-test' },
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'unit-test',
+                options: {
+                  caseSensitive: false,
+                },
+              },
+            },
+            take: 2,
+          })
+        ).instances
+        const expected = [
+          { id: '123', name: 'unit-test' },
+          { id: '234', name: 'unit-test' },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+    })
     describe('#retrieve()', () => {
       it('should get the object stored in the db', async () => {
         const myModel = { id: 'my-id', name: 'my-name' }
@@ -42,6 +171,19 @@ describe('/src/datastore/memory.js', () => {
         const store = datastore()
         const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
         await store.save(myModel)
+        const actual = await store.retrieve(TEST_MODEL1, 'my-id')
+        const expected = { id: 'my-id', name: 'my-name' }
+        assert.deepEqual(actual, expected)
+      })
+      it('should put be able to put two objects in that can then be retrieved later', async () => {
+        const store = datastore()
+        const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
+        await store.save(myModel)
+        const myModel2 = TEST_MODEL1.create({
+          id: 'my-id-2',
+          name: 'my-name-2',
+        })
+        await store.save(myModel2)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)

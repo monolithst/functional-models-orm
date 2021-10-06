@@ -6,33 +6,24 @@ const compile = queryData => () => {
     (acc, partial) => {
       if (partial.type === 'property') {
         return merge(acc, { properties: { [partial.name]: partial } })
+      } else if (partial.type === 'and') {
+        return acc
+      } else if (partial.type === 'or') {
+        return acc
       }
-      if (partial.type === 'page') {
-        return merge(acc, { page: partial.value })
-      }
-      return acc
+      return merge(acc, { [partial.type]: partial.value })
     },
-    { properties: {} }
+    { properties: {}, chain: queryData }
   )
 }
 
-const ormQueryBuilderAndOr = queryData => {
-  const and = () => {
-    return ormQueryBuilder([...queryData, { type: 'and' }])
-  }
-  const or = () => {
-    return ormQueryBuilder([...queryData, { type: 'or' }])
-  }
-  return {
-    compile: compile(queryData),
-    and,
-    or,
-  }
-}
-
 const ormQueryBuilder = (queryData = []) => {
-  const property = (name, value, { caseSensitive = false } = {}) => {
-    return ormQueryBuilderAndOr([
+  const property = (
+    name,
+    value,
+    { caseSensitive = false, startsWith = false, endsWith = false } = {}
+  ) => {
+    return ormQueryBuilder([
       ...queryData,
       {
         type: 'property',
@@ -40,15 +31,15 @@ const ormQueryBuilder = (queryData = []) => {
         value,
         options: {
           caseSensitive,
-          startsWith: false,
-          endsWith: false,
+          startsWith,
+          endsWith,
         },
       },
     ])
   }
 
   const pagination = value => {
-    return ormQueryBuilderAndOr([
+    return ormQueryBuilder([
       ...queryData,
       {
         type: 'page',
@@ -57,10 +48,34 @@ const ormQueryBuilder = (queryData = []) => {
     ])
   }
 
+  const take = count => {
+    const parsed = parseInt(count, 10)
+    if (Number.isNaN(parsed)) {
+      throw new Error(`${count} must be an integer.`)
+    }
+    return ormQueryBuilder([
+      ...queryData,
+      {
+        type: 'take',
+        value: parsed,
+      },
+    ])
+  }
+
+  const and = () => {
+    return ormQueryBuilder([...queryData, { type: 'and' }])
+  }
+  const or = () => {
+    return ormQueryBuilder([...queryData, { type: 'or' }])
+  }
+
   return {
     compile: compile(queryData),
     property,
     pagination,
+    take,
+    and,
+    or,
   }
 }
 

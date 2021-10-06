@@ -1,11 +1,17 @@
 const merge = require('lodash/merge')
 const get = require('lodash/get')
 const { Model: functionalModel } = require('functional-models')
+const { ValidationError } = require('./errors')
 
 const isDirtyFalse = () => false
 const isDirtyTrue = () => true
+const _instanceProperties = {
+  meta: {
+    isDirty: isDirtyTrue,
+  },
+}
 
-const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
+const orm = ({ datastoreProvider, Model = functionalModel }) => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }
@@ -31,7 +37,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     return _retrievedObjToModel(model)(obj)
   }
 
-  const Model = (modelName, keyToProperty, modelOptions = {}, ...args) => {
+  const ThisModel = (modelName, keyToProperty, modelOptions = {}, ...args) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
     It has been intentionally decided that recreating the model each and every time for each database retrieve is
@@ -40,7 +46,11 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
     // eslint-disable-next-line functional/no-let
     let model = null
 
-    const search = model => ormQuery => {
+    const loadedRetrieve = id => {
+      return retrieve(model)(id)
+    }
+
+    const search = ormQuery => {
       return datastoreProvider.search(model, ormQuery).then(result => {
         return {
           instances: result.instances.map(_retrievedObjToModel(model)),
@@ -49,12 +59,7 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
       })
     }
 
-    const instanceProperties = {
-      meta: {
-        isDirty: isDirtyTrue,
-      },
-    }
-    const newKeyToProperty = merge({}, keyToProperty, instanceProperties)
+    const newKeyToProperty = merge({}, keyToProperty, _instanceProperties)
     const callBacks = {
       instanceCreatedCallback: instance => {
         const deleteObj = async () => {
@@ -63,19 +68,28 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
           })
         }
 
+        const _updateLastModifiedIfExistsReturnNewObj = async () => {
+          const hasLastModified = Object.entries(
+            instance.meta.getModel().getProperties()
+          ).filter(([_, value]) => Boolean(value.lastModifiedUpdateMethod))[0]
+
+          return hasLastModified
+            ? model.create({
+                ...(await instance.functions.toObj()),
+                [hasLastModified[0]]:
+                  hasLastModified[1].lastModifiedUpdateMethod(),
+              })
+            : instance
+        }
+
         const save = async () => {
           return Promise.resolve().then(async () => {
-            const valid = await instance.functions.validate()
+            const newInstance = await _updateLastModifiedIfExistsReturnNewObj()
+            const valid = await newInstance.functions.validate()
             if (Object.keys(valid).length > 0) {
-              throw new Error(
-                `Cannot save ${modelName}. Validation errors ${Object.entries(
-                  valid
-                )
-                  .map(([k, v]) => `${k}:${v.join(',')}`)
-                  .join(';')}}.`
-              )
+              throw new ValidationError(modelName, valid)
             }
-            const savedObj = await datastoreProvider.save(instance)
+            const savedObj = await datastoreProvider.save(newInstance)
             return _retrievedObjToModel(model)(savedObj)
           })
         }
@@ -92,17 +106,18 @@ const orm = ({ datastoreProvider, modelObj = functionalModel }) => {
       instanceCreatedCallback: callBacks.instanceCreatedCallback,
       modelFunctions: {
         ...get(modelOptions, 'modelFunctions', {}),
-        retrieve,
+        retrieve: loadedRetrieve,
         search,
       },
     })
-    model = modelObj(modelName, newKeyToProperty, mergedModelOptions, ...args)
+    model = Model(modelName, newKeyToProperty, mergedModelOptions, ...args)
     return model
   }
 
   return {
-    Model,
+    Model: ThisModel,
     fetcher,
+    datastoreProvider,
   }
 }
 
