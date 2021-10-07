@@ -93,10 +93,22 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
             return _retrievedObjToModel(model)(savedObj)
           })
         }
-        // eslint-disable-next-line functional/immutable-data
-        instance.functions.save = save
-        // eslint-disable-next-line functional/immutable-data
-        instance.functions.delete = deleteObj
+
+        // See if save has been overrided. 
+        if (instance.functions.save) {
+          instance.functions.save(save)
+        } else {
+          // eslint-disable-next-line functional/immutable-data
+          instance.functions.save = save
+        }
+
+        if (instance.functions.delete) {
+          instance.functions.delete(deleteObj)
+        } else {
+          // eslint-disable-next-line functional/immutable-data
+          instance.functions.delete = deleteObj
+        }
+
         if (modelOptions.instanceCreatedCallback) {
           modelOptions.instanceCreatedCallback(instance)
         }
