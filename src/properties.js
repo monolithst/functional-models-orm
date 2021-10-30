@@ -23,6 +23,7 @@ const ormPropertyConfig = (config = _defaultPropertyConfig) => {
   })
 }
 
+
 module.exports = {
   ormPropertyConfig,
   LastModifiedDateProperty,

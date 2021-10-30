@@ -22,7 +22,7 @@ const MODELS = {
     'Model1',
     {
       id: UniqueId(),
-      name: Property(),
+      name: Property('MyProperty'),
     },
   ],
 }

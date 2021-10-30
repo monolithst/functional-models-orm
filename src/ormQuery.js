@@ -21,7 +21,7 @@ const ormQueryBuilder = (queryData = []) => {
   const property = (
     name,
     value,
-    { caseSensitive = false, startsWith = false, endsWith = false } = {}
+    { caseSensitive = false, startsWith = false, endsWith = false, type='string' } = {}
   ) => {
     return ormQueryBuilder([
       ...queryData,
@@ -29,6 +29,7 @@ const ormQueryBuilder = (queryData = []) => {
         type: 'property',
         name,
         value,
+        valueType: type,
         options: {
           caseSensitive,
           startsWith,

@@ -8,6 +8,7 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name',
     value: 'my-value',
+    valueType: 'string',
     options: {
       caseSensitive: false,
       startsWith: false,
@@ -18,6 +19,7 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name2',
     value: 'my-value2',
+    valueType: 'string',
     options: {
       caseSensitive: false,
       startsWith: true,
@@ -28,6 +30,7 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name3',
     value: 'my-value3',
+    valueType: 'string',
     options: {
       caseSensitive: true,
       startsWith: false,
@@ -38,6 +41,7 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name4',
     value: 'my-value4',
+    valueType: 'string',
     options: {
       caseSensitive: false,
       startsWith: false,

@@ -33,7 +33,10 @@ const _doUniqueCheck = async (
 }
 
 const uniqueTogether = propertyKeyArray => {
-  const _uniqueTogether = async (instance, instanceData) => {
+  const _uniqueTogether = async (instance, instanceData, options=buildOrmValidationOptions({})) => {
+    if (options.noOrmValidation) {
+      return undefined
+    }
     const properties = propertyKeyArray.map(key => {
       return [key, instanceData[key]]
     })
@@ -56,13 +59,20 @@ const uniqueTogether = propertyKeyArray => {
 }
 
 const unique = propertyKey => {
-  const _unique = async (value, instance, instanceData) => {
-    return uniqueTogether([propertyKey])(instance, instanceData)
+  const _unique = async (value, instance, instanceData, options) => {
+    return uniqueTogether([propertyKey])(instance, instanceData, options)
   }
   return _unique
 }
 
+const buildOrmValidationOptions = ({
+  noOrmValidation=false
+}) => ({
+  noOrmValidation,
+})
+
 module.exports = {
   unique,
   uniqueTogether,
+  buildOrmValidationOptions,
 }

@@ -1,5 +1,5 @@
 const assert = require('chai').assert
-const { Model, UniqueId, TextProperty } = require('functional-models')
+const { Model, TextProperty, UniqueId } = require('functional-models')
 const datastore = require('../../src/datastore/memory')
 
 const TEST_MODEL1 = Model('TestModel1', {
