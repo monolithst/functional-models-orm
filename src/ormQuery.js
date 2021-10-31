@@ -10,6 +10,10 @@ const compile = queryData => () => {
         return acc
       } else if (partial.type === 'or') {
         return acc
+      } else if (partial.type === 'datesAfter') {
+        return merge(acc, { datesAfter: partial })
+      } else if (partial.type === 'datesBefore') {
+        return merge(acc, { datesBefore: partial })
       }
       return merge(acc, { [partial.type]: partial.value })
     },
@@ -18,6 +22,36 @@ const compile = queryData => () => {
 }
 
 const ormQueryBuilder = (queryData = []) => {
+  const datesAfter = (key, jsDate, { valueType='string', equalToAndAfter=true}) => {
+    return ormQueryBuilder([
+      ...queryData,
+      {
+        type: 'datesAfter',
+        key,
+        date: jsDate,
+        valueType,
+        options: {
+          equalToAndAfter
+        },
+      },
+    ])
+  }
+
+  const datesBefore = (key, jsDate, { valueType='string', equalToAndBefore=true}) => {
+    return ormQueryBuilder([
+      ...queryData,
+      {
+        type: 'datesBefore',
+        key,
+        date: jsDate,
+        valueType,
+        options: {
+          equalToAndBefore,
+        },
+      },
+    ])
+  }
+
   const property = (
     name,
     value,
@@ -72,6 +106,8 @@ const ormQueryBuilder = (queryData = []) => {
 
   return {
     compile: compile(queryData),
+    datesAfter,
+    datesBefore,
     property,
     pagination,
     take,
