@@ -11,9 +11,13 @@ const compile = queryData => () => {
       } else if (partial.type === 'or') {
         return acc
       } else if (partial.type === 'datesAfter') {
-        return merge(acc, { datesAfter: partial })
+        return acc.datesAfter
+          ? merge(acc, { datesAfter: [...acc.datesAfter, partial] })
+          : merge(acc, { datesAfter: [partial] })
       } else if (partial.type === 'datesBefore') {
-        return merge(acc, { datesBefore: partial })
+        return acc.datesBefore
+          ? merge(acc, { datesBefore: [...acc.datesBefore, partial] })
+          : merge(acc, { datesBefore: [partial] })
       }
       return merge(acc, { [partial.type]: partial.value })
     },
