@@ -37,6 +37,10 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
     return _retrievedObjToModel(model)(obj)
   }
 
+  const bulkInsert = model => async (instances) => {
+    return await Promise.all(instances.map(x=>x.functions.save()))
+  }
+
   const ThisModel = (
     modelName,
     keyToProperty,
@@ -122,8 +126,6 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
     const mergedModelOptions = merge({}, modelOptions, {
       instanceCreatedCallback: callBacks.instanceCreatedCallback,
       modelFunctions: {
-        ...get(modelOptions, 'modelFunctions', {}),
-        getPrimaryKeyName: () => modelOptions.primaryKey,
         retrieve: loadedRetrieve,
         search,
         save,
@@ -132,6 +134,9 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
           return instance.functions.save()
         },
         delete: deleteObj,
+        bulkInsert,
+        ...get(modelOptions, 'modelFunctions', {}),
+        getPrimaryKeyName: () => modelOptions.primaryKey,
       },
     })
     model = Model(modelName, newKeyToProperty, mergedModelOptions, ...args)
