@@ -38,7 +38,13 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
   }
 
   const bulkInsert = model => async (instances) => {
-    return await Promise.all(instances.map(x=>x.functions.save()))
+    if (datastoreProvider.bulkInsert) {
+      await datastoreProvider.bulkInsert(instances)
+      return undefined
+    } else {
+      await Promise.all(instances.map(x=>x.functions.save()))
+      return undefined
+    }
   }
 
   const ThisModel = (
