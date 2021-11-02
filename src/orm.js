@@ -39,12 +39,12 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
 
   const bulkInsert = model => async (instances) => {
     if (datastoreProvider.bulkInsert) {
-      await datastoreProvider.bulkInsert(instances)
+      await datastoreProvider.bulkInsert(model, instances)
       return undefined
-    } else {
+    } 
       await Promise.all(instances.map(x=>x.functions.save()))
       return undefined
-    }
+    
   }
 
   const ThisModel = (
@@ -100,7 +100,7 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
       })
     }
 
-    const deleteObj = (Model) => (instance) => async () => {
+    const deleteObj = () => (instance) => async () => {
       return Promise.resolve().then(async () => {
         await datastoreProvider.delete(instance)
       })

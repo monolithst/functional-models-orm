@@ -33,6 +33,31 @@ describe('/src/datastore/memory.js', () => {
         const expected = []
         assert.deepEqual(actual, expected)
       })
+      it('should put the second instance on top when using sort("name", false)', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '123', name: 'unit-test' },
+            { id: '234', name: 'unit-test-2' },
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'name',
+                value: 'unit-test',
+                options: {
+                  startsWith: true,
+                },
+              }
+            },
+            sort: { order: false, key: 'name'}
+          })
+        ).instances
+        const expected = [{id: '234', name: 'unit-test-2'}, { id: '123', name: 'unit-test' }]
+        assert.deepEqual(actual, expected)
+      })
       it('should find one instance when using an insensitive search', async () => {
         const datastoreProvider = datastore({
           [TEST_MODEL1.getName()]: [{ id: '123', name: 'unit-test' }],

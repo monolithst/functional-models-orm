@@ -1,7 +1,7 @@
 const merge = require('lodash/merge')
-const pickBy = require('lodash/pickBy')
 const values = require('lodash/values')
 const get = require('lodash/get')
+const orderBy = require('lodash/orderBy')
 
 const _getDbEntryInfo = async instance => {
   const modelName = instance.meta.getModel().getName()
@@ -66,19 +66,17 @@ const memoryDatastoreProvider = (
   const search = (model, ormQuery) => {
     return Promise.resolve().then(() => {
       const modelName = model.getName()
-      const propertyQueries = ormQuery.properties
-      const insensitiveQueries = values(
-        pickBy(
-          propertyQueries,
-          (value, _) => value.options.caseSensitive === false
-        )
-      )
-      const caseSensitiveQueries = values(
-        pickBy(
-          propertyQueries,
-          (value, _) => value.options.caseSensitive === true
-        )
-      )
+      const propertyQueries = ormQuery.properties || {}
+      const searches = Object.values(propertyQueries)
+        .map(partial => {
+          const flag = partial.options.caseSensitive ? '' : 'i'
+          const value = partial.options.startsWith
+            ? `^${partial.value}`
+            : partial.options.endsWith
+              ? `${partial.value}$`
+              : `^${partial.value}$`
+          return [partial.name, new RegExp(value, flag)]
+        })
       if (!(modelName in db)) {
         return {
           instances: [],
@@ -86,30 +84,19 @@ const memoryDatastoreProvider = (
         }
       }
       const models = db[modelName]
-      const results = values(
-        pickBy(models, (obj, _) => {
-          if (
-            insensitiveQueries.find(i => {
-              return (
-                i.value.localeCompare(obj[i.name], undefined, {
-                  sensitivity: 'accent',
-                }) === 0
-              )
-            })
-          ) {
-            return true
-          }
-          if (caseSensitiveQueries.find(i => i.value === obj[i.name])) {
-            return true
-          }
-          return false
+      const results = values(models)
+        .filter(obj => {
+          const match = searches.find(([name, regex])=> regex.test(obj[name]))
+          return Boolean(match)
         })
-      )
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
         : results
+      const sorted = ormQuery.sort
+        ? orderBy(instances, [ormQuery.sort.key], [ormQuery.sort.order ? 'asc' : 'desc'])
+        : instances
       return {
-        instances,
+        instances: sorted,
         page: null,
       }
     })

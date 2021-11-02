@@ -18,6 +18,8 @@ const compile = queryData => () => {
         return acc.datesBefore
           ? merge(acc, { datesBefore: {...acc.datesBefore, [partial.key]: partial } })
           : merge(acc, { datesBefore: {[partial.key]: partial} })
+      } else if (partial.type === 'sort') {
+        return merge(acc, { [partial.type]: partial })
       }
       return merge(acc, { [partial.type]: partial.value })
     },
@@ -101,6 +103,20 @@ const ormQueryBuilder = (queryData = []) => {
     ])
   }
 
+  const sort = (key, lowToHigh=true) => {
+    if (typeof lowToHigh !== 'boolean') {
+      throw new Error('Must be a boolean type')
+    }
+    return ormQueryBuilder([
+      ...queryData,
+      {
+        type: 'sort',
+        key,
+        order: lowToHigh,
+      },
+    ])
+  }
+
   const and = () => {
     return ormQueryBuilder([...queryData, { type: 'and' }])
   }
@@ -114,6 +130,7 @@ const ormQueryBuilder = (queryData = []) => {
     datesBefore,
     property,
     pagination,
+    sort,
     take,
     and,
     or,
