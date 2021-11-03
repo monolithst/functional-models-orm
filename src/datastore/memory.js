@@ -2,6 +2,9 @@ const merge = require('lodash/merge')
 const values = require('lodash/values')
 const get = require('lodash/get')
 const orderBy = require('lodash/orderBy')
+const isBefore = require('date-fns/isBefore')
+const isAfter = require('date-fns/isAfter')
+const isEqual = require('date-fns/isEqual')
 
 const _getDbEntryInfo = async instance => {
   const modelName = instance.meta.getModel().getName()
@@ -84,10 +87,47 @@ const memoryDatastoreProvider = (
         }
       }
       const models = db[modelName]
+      const beforeFilters = Object.entries(ormQuery.datesBefore || {})
+        .reduce((acc, [key, partial]) => {
+          return [...acc, (theirObj) => {
+            const asDate = new Date(theirObj[key])
+            const thisDate = new Date(partial.date)
+            const before = isBefore(asDate, thisDate)
+            return partial.options.equalToAndBefore
+              ? before || isEqual(asDate, thisDate)
+              : before
+          }]
+        }, [])
+      const afterFilters = Object.entries(ormQuery.datesAfter || {})
+        .reduce((acc, [key, partial]) => {
+          return [...acc, (theirObj) => {
+            const asDate = new Date(theirObj[key])
+            const thisDate = new Date(partial.date)
+            const after = isAfter(asDate, thisDate)
+            return partial.options.equalToAndAfter
+              ? after || isEqual(asDate, thisDate)
+              : after
+          }]
+        }, [])
       const results = values(models)
         .filter(obj => {
           const match = searches.find(([name, regex])=> regex.test(obj[name]))
-          return Boolean(match)
+          if (!match) {
+            return false
+          }
+          const beforeMatched = beforeFilters.length > 0
+            ? beforeFilters.every(method=> method(obj))
+            : true
+          if (!beforeMatched) {
+            return false
+          }
+          const afterMatched = afterFilters.length > 0
+            ? afterFilters.every(method=> method(obj))
+            : true
+          if (!afterMatched) {
+            return false
+          }
+          return true
         })
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
@@ -95,6 +135,8 @@ const memoryDatastoreProvider = (
       const sorted = ormQuery.sort
         ? orderBy(instances, [ormQuery.sort.key], [ormQuery.sort.order ? 'asc' : 'desc'])
         : instances
+
+
       return {
         instances: sorted,
         page: null,
