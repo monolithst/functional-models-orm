@@ -100,7 +100,7 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
       })
     }
 
-    const deleteObj = () => (instance) => async () => {
+    const deleteObj = (instance) => async () => {
       return Promise.resolve().then(async () => {
         await datastoreProvider.delete(instance)
       })
@@ -111,17 +111,17 @@ const orm = ({ datastoreProvider, Model = functionalModel }) => {
 
         // See if save has been overrided. 
         if (instance.functions.save) {
-          instance.functions.save(save)
+          instance.functions.save = instance.functions.save(save)
         } else {
           // eslint-disable-next-line functional/immutable-data
           instance.functions.save = save(instance)
         }
 
         if (instance.functions.delete) {
-          instance.functions.delete(deleteObj)
+          instance.functions.delete = instance.functions.delete(deleteObj)
         } else {
           // eslint-disable-next-line functional/immutable-data
-          instance.functions.delete = deleteObj(Model)(instance)
+          instance.functions.delete = deleteObj(instance)
         }
 
         if (modelOptions.instanceCreatedCallback) {
