@@ -9,7 +9,8 @@ const isEqual = require('date-fns/isEqual')
 const _getDbEntryInfo = async instance => {
   const modelName = instance.meta.getModel().getName()
   const obj = await instance.functions.toObj()
-  return [modelName, obj]
+  const primaryKey = await instance.functions.getPrimaryKey()
+  return [modelName, obj, primaryKey]
 }
 
 const memoryDatastoreProvider = (
@@ -34,13 +35,13 @@ const memoryDatastoreProvider = (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
         .then(async () => {
-          const [modelName, obj] = await _getDbEntryInfo(instance)
+          const [modelName, obj, primaryKey] = await _getDbEntryInfo(instance)
           if (!(modelName in db)) {
             // eslint-disable-next-line functional/immutable-data
             db[modelName] = {}
           }
           // eslint-disable-next-line functional/immutable-data
-          db[modelName][obj[primaryKey]] = obj
+          db[modelName][primaryKey] = obj
           return obj
         })
     )
@@ -51,7 +52,7 @@ const memoryDatastoreProvider = (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
         .then(async () => {
-          const [modelName, obj] = await _getDbEntryInfo(instance)
+          const [modelName, obj, primaryKey] = await _getDbEntryInfo(instance)
           // eslint-disable-next-line no-undef,functional/immutable-data
           delete db[modelName][obj[primaryKey]]
         })
@@ -68,6 +69,8 @@ const memoryDatastoreProvider = (
 
   const search = (model, ormQuery) => {
     return Promise.resolve().then(() => {
+      console.log("search")
+      console.log(ormQuery)
       const modelName = model.getName()
       const propertyQueries = ormQuery.properties || {}
       const searches = Object.values(propertyQueries)
@@ -87,22 +90,33 @@ const memoryDatastoreProvider = (
         }
       }
       const models = db[modelName]
+      console.log("doing date query")
       const beforeFilters = Object.entries(ormQuery.datesBefore || {})
         .reduce((acc, [key, partial]) => {
+          console.log("uhm")
           return [...acc, (theirObj) => {
+            console.log("before")
+            console.log(theirObj)
             const asDate = new Date(theirObj[key])
+            console.log(asDate)
             const thisDate = new Date(partial.date)
+            console.log(thisDate)
             const before = isBefore(asDate, thisDate)
             return partial.options.equalToAndBefore
               ? before || isEqual(asDate, thisDate)
               : before
           }]
         }, [])
+          console.log("between")
       const afterFilters = Object.entries(ormQuery.datesAfter || {})
         .reduce((acc, [key, partial]) => {
+          console.log("uhm2")
           return [...acc, (theirObj) => {
+            console.log("after")
             const asDate = new Date(theirObj[key])
+            console.log(asDate)
             const thisDate = new Date(partial.date)
+            console.log(thisDate)
             const after = isAfter(asDate, thisDate)
             return partial.options.equalToAndAfter
               ? after || isEqual(asDate, thisDate)
@@ -111,9 +125,11 @@ const memoryDatastoreProvider = (
         }, [])
       const results = values(models)
         .filter(obj => {
-          const match = searches.find(([name, regex])=> regex.test(obj[name]))
-          if (!match) {
-            return false
+          if (searches.length > 0) {
+            const match = searches.find(([name, regex])=> regex.test(obj[name]))
+            if (!match) {
+              return false
+            }
           }
           const beforeMatched = beforeFilters.length > 0
             ? beforeFilters.every(method=> method(obj))

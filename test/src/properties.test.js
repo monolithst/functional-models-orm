@@ -2,7 +2,7 @@ const assert = require('chai').assert
 const sinon = require('sinon')
 const { ormPropertyConfig } = require('../../src/properties')
 
-describe('/src/properties.js', () => {
+describe('/src/properties.ts', () => {
   describe('#ormPropertyConfig()', () => {
     it('should return one validator when unique:key is set', () => {
       const input = { unique: 'key' }
