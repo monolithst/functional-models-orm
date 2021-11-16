@@ -1,6 +1,6 @@
 {
   "name": "functional-models-orm",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "A basic ORM building library using the functional-models library.",
   "main": "index.js",
   "scripts": {
@@ -49,7 +49,7 @@
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
     "date-fns": "^2.25.0",
-    "functional-models": "^1.0.26",
+    "functional-models": "^1.0.27",
     "lodash": "^4.17.21"
   }
 }
