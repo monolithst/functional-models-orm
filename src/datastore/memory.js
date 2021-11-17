@@ -111,9 +111,11 @@ const memoryDatastoreProvider = (
         }, [])
       const results = values(models)
         .filter(obj => {
-          const match = searches.find(([name, regex])=> regex.test(obj[name]))
-          if (!match) {
-            return false
+          if (searches.length > 0) {
+            const match = searches.find(([name, regex])=> regex.test(obj[name]))
+            if (!match) {
+              return false
+            }
           }
           const beforeMatched = beforeFilters.length > 0
             ? beforeFilters.every(method=> method(obj))
