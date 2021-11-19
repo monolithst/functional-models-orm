@@ -76,8 +76,8 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
     if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
       throw new Error(`${equalitySymbol} is not a valid symbol`)
     }
-    if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type !== ORMType.string) {
-      throw new Error(`Cannot use a non = symbol for a non string type of ${type}`)
+    if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type === ORMType.string) {
+      throw new Error(`Cannot use a non = symbol for a string type`)
     }
     if (!type) {
       type = ORMType.string
