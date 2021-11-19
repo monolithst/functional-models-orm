@@ -15,7 +15,7 @@ const _doUniqueCheck = async (
   if (resultsLength < 1) {
     return undefined
   }
-  const ids = await Promise.all(
+  const ids : any[] = await Promise.all(
     results.instances.map((x: any) => x.functions.getPrimaryKey())
   )
   // We have our match by id.
