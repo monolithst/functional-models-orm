@@ -1,8 +1,8 @@
 const sinon = require('sinon')
 const assert = require('chai').assert
 const { Model, TextProperty } = require('functional-models')
-const memoryDatastoreProvider = require('../../src/datastore/memory')
-const { uniqueTogether, unique } = require('../../src/validation')
+const memoryDatastoreProvider = require('../../dist/datastore/memory')
+const { uniqueTogether, unique } = require('../../dist/validation')
 
 const createTestModel1 = () =>
   Model('TestModel1', {

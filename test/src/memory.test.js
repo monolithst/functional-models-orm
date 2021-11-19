@@ -1,7 +1,7 @@
 const assert = require('chai').assert
 const { Model, TextProperty, UniqueId } = require('functional-models')
-const datastore = require('../../src/datastore/memory')
-const { EQUALITY_SYMBOLS } = require('../../src/ormQuery')
+const datastore = require('../../dist/datastore/memory')
+const { EQUALITY_SYMBOLS } = require('../../dist/ormQuery')
 
 const TEST_MODEL1 = Model('TestModel1', {
   id: UniqueId(),

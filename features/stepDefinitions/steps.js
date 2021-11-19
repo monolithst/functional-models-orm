@@ -1,9 +1,9 @@
 const assert = require('chai').assert
 const { Given, When, Then } = require('cucumber')
 const { Property, Model, UniqueId } = require('functional-models')
-const orm = require('../../src/orm')
-const { ormQueryBuilder } = require('../../src/ormQuery')
-const memoryDatastoreProvider = require('../../src/datastore/memory')
+const orm = require('../../dist/orm')
+const { ormQueryBuilder } = require('../../dist/ormQuery')
+const memoryDatastoreProvider = require('../../dist/datastore/memory')
 
 const DATASTORES = {
   MemoryDatastoreProvider: memoryDatastoreProvider(),

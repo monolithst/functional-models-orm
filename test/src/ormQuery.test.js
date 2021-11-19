@@ -1,7 +1,7 @@
 const get = require('lodash/get')
 const pick = require('lodash/pick')
 const assert = require('chai').assert
-const { ormQueryBuilder } = require('../../src/ormQuery')
+const { ormQueryBuilder } = require('../../dist/ormQuery')
 
 const TEST_OBJS = {
   'my-name': {
@@ -53,7 +53,7 @@ const TEST_OBJS = {
     },
   },
 }
-describe('/src/ormQuery.js', () => {
+describe('/src/ormQuery.ts', () => {
   describe('#ormQueryBuilder()', () => {
     it('should have "my-value" for "my-name" property', () => {
       const builder = ormQueryBuilder()

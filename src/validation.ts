@@ -1,11 +1,12 @@
-const flow = require('lodash/flow')
-const ormQuery = require('./ormQuery')
+import flow from 'lodash/flow'
+import { ormQueryBuilder } from './ormQuery'
+import { OrmQuery } from './interfaces'
 
 const _doUniqueCheck = async (
-  query,
-  instance,
-  instanceData,
-  buildErrorMessage
+  query: OrmQuery,
+  instance: any,
+  instanceData: any,
+  buildErrorMessage: () => string
 ) => {
   const model = instance.meta.getModel()
   const results = await model.search(query)
@@ -15,7 +16,7 @@ const _doUniqueCheck = async (
     return undefined
   }
   const ids = await Promise.all(
-    results.instances.map(x => x.functions.getPrimaryKey())
+    results.instances.map((x: any) => x.functions.getPrimaryKey())
   )
   // We have our match by id.
   const instanceId = instanceData[model.getPrimaryKeyName()]
@@ -32,8 +33,8 @@ const _doUniqueCheck = async (
   return buildErrorMessage()
 }
 
-const uniqueTogether = propertyKeyArray => {
-  const _uniqueTogether = async (instance, instanceData, options=buildOrmValidationOptions({})) => {
+const uniqueTogether = (propertyKeyArray: string[]) => {
+  const _uniqueTogether = async (instance: any, instanceData: any, options=buildOrmValidationOptions({})) => {
     if (options.noOrmValidation) {
       return undefined
     }
@@ -46,7 +47,7 @@ const uniqueTogether = propertyKeyArray => {
           return b.property(key, value, { caseSensitive: false }).and()
         }
       })
-    )(ormQuery.ormQueryBuilder()).compile()
+    )(ormQueryBuilder()).compile()
     return _doUniqueCheck(query, instance, instanceData, () => {
       return propertyKeyArray.length > 1
         ? `${propertyKeyArray.join(
@@ -58,8 +59,8 @@ const uniqueTogether = propertyKeyArray => {
   return _uniqueTogether
 }
 
-const unique = propertyKey => {
-  const _unique = async (value, instance, instanceData, options) => {
+const unique = (propertyKey: string) => {
+  const _unique = async (value: string, instance: any, instanceData: any, options: {noOrmValidation: boolean}) => {
     return uniqueTogether([propertyKey])(instance, instanceData, options)
   }
   return _unique

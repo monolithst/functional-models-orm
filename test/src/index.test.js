@@ -1,17 +1,16 @@
 const assert = require('chai').assert
-const index = require('../../src')
 
 describe('/src/index.js', () => {
   it('should have an orm object', () => {
-    const { orm } = require('../../src')
+    const { orm } = require('../../dist')
     assert.isOk(orm)
   })
   it('should have an ormQuery object', () => {
-    const { ormQuery } = require('../../src')
+    const { ormQuery } = require('../../dist')
     assert.isOk(ormQuery)
   })
   it('should have an datastore object', () => {
-    const { datastore } = require('../../src')
+    const { datastore } = require('../../dist')
     assert.isOk(datastore)
   })
 })

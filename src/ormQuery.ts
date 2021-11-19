@@ -1,99 +1,5 @@
-const merge = require('lodash/merge')
-
-enum EQUALITY_SYMBOLS {
-  EQUALS='=',
-  LT='<',
-  LTE='<=',
-  GT='>',
-  GTE='>=',
-}
-
-const ALLOWABLE_EQUALITY_SYMBOLS = Object.values(EQUALITY_SYMBOLS)
-
-type PropertyStatement = {
-  type: 'property',
-  name: string,
-  value: any,
-  valueType: ORMType,
-  options: {
-    caseSensitive: boolean,
-    startsWith: boolean,
-    endsWith: boolean,
-    equalitySymbol: EQUALITY_SYMBOLS,
-  }
-}
-
-type PageValue = any
-type TakeValue = number
-
-
-type PaginationStatement = {
-  type: 'page',
-  value: PageValue,
-}
-
-type TakeStatement = {
-  type: 'take',
-  value: TakeValue,
-}
-
-type SortStatement = {
-  type: 'sort',
-  key: string,
-  order: boolean,
-}
-
-type DatesAfterStatement = {
-  type: 'datesAfter',
-  key: string,
-  date: Date|string,
-  valueType: ORMType,
-  options: {
-    equalToAndAfter: boolean,
-  }
-}
-
-type DatesBeforeStatement = {
-  type: 'datesBefore',
-  key: string,
-  date: Date|string,
-  valueType: ORMType,
-  options: {
-    equalToAndBefore: boolean,
-  }
-}
-
-type AndStatement = {
-  type: 'and',
-}
-
-type OrStatement = {
-  type: 'or',
-}
-
-type OrmQuery = {
-  properties: {
-    [s: string]: PropertyStatement
-  },
-  datesAfter?: {
-    [s: string]: DatesAfterStatement,
-  },
-  datesBefore?: {
-    [s: string]: DatesBeforeStatement,
-  },
-  sort?: SortStatement,
-  take?: TakeValue,
-  page?: PageValue,
-  chain: OrmQueryStatement[],
-}
-
-enum ORMType {
-  string='string',
-  number='number',
-  date='date',
-  object='object',
-  boolean='boolean',
-}
+import merge from 'lodash/merge'
+import { OrmQuery, OrmQueryStatement, TakeStatement, PaginationStatement , DatesBeforeStatement, DatesAfterStatement, SortStatement, PropertyStatement, AndStatement, OrStatement, EQUALITY_SYMBOLS, ORMType, ALLOWABLE_EQUALITY_SYMBOLS} from './interfaces'
 
 const compile = (queryData: OrmQueryStatement[]) => () : OrmQuery => {
   // TODO: This does not handle AND/OR at all.
@@ -123,14 +29,6 @@ const compile = (queryData: OrmQueryStatement[]) => () : OrmQuery => {
   )
 }
 
-type OrmQueryStatement = DatesAfterStatement |
-  DatesBeforeStatement |
-  SortStatement |
-  TakeStatement |
-  PaginationStatement |
-  PropertyStatement |
-  AndStatement |
-  OrStatement
 
 const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
   const datesAfter = (key: string, jsDate: Date|string, { valueType=ORMType.string, equalToAndAfter=true}) => {
@@ -261,7 +159,7 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
   }
 }
 
-module.exports = {
+export {
   ormQueryBuilder,
   EQUALITY_SYMBOLS,
 }

@@ -1,8 +1,8 @@
 const assert = require('chai').assert
 const sinon = require('sinon')
-const createDatastore = require('../../src/datastore/memory')
-const orm = require('../../src/orm')
-const { LastModifiedDateProperty } = require('../../src/properties')
+const createDatastore = require('../../dist/datastore/memory')
+const orm = require('../../dist/orm')
+const { LastModifiedDateProperty } = require('../../dist/properties')
 const { Model, TextProperty, UniqueId } = require('functional-models')
 
 describe('/src/orm.js', () => {

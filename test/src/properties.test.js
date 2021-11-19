@@ -1,6 +1,6 @@
 const assert = require('chai').assert
 const sinon = require('sinon')
-const { ormPropertyConfig } = require('../../src/properties')
+const { ormPropertyConfig } = require('../../dist/properties')
 
 describe('/src/properties.js', () => {
   describe('#ormPropertyConfig()', () => {
