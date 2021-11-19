@@ -12,6 +12,7 @@ const TEST_OBJS = {
     options: {
       caseSensitive: false,
       startsWith: false,
+      equalitySymbol: '=',
       endsWith: false,
     },
   },
@@ -23,6 +24,7 @@ const TEST_OBJS = {
     options: {
       caseSensitive: false,
       startsWith: true,
+      equalitySymbol: '=',
       endsWith: false,
     },
   },
@@ -34,6 +36,7 @@ const TEST_OBJS = {
     options: {
       caseSensitive: true,
       startsWith: false,
+      equalitySymbol: '=',
       endsWith: false,
     },
   },
@@ -45,6 +48,7 @@ const TEST_OBJS = {
     options: {
       caseSensitive: false,
       startsWith: false,
+      equalitySymbol: '=',
       endsWith: true,
     },
   },

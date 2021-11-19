@@ -66,19 +66,41 @@ const memoryDatastoreProvider = (
     })
   }
 
+  const _equalitySymbolToOperation = {
+    '=': (name, value) => (obj) => value === obj[name],
+    '>=': (name, value) => (obj) => obj[name] >= value,
+    '>': (name, value) => (obj) => obj[name] > value,
+    '<=': (name, value) => (obj) => obj[name] <= value,
+    '<': (name, value) => (obj) => obj[name] < value,
+  }
+
   const search = (model, ormQuery) => {
     return Promise.resolve().then(() => {
       const modelName = model.getName()
       const propertyQueries = ormQuery.properties || {}
       const searches = Object.values(propertyQueries)
         .map(partial => {
-          const flag = partial.options.caseSensitive ? '' : 'i'
-          const value = partial.options.startsWith
-            ? `^${partial.value}`
-            : partial.options.endsWith
-              ? `${partial.value}$`
-              : `^${partial.value}$`
-          return [partial.name, new RegExp(value, flag)]
+          if (partial.options.type === 'string' || !partial.options.type) {
+            const flag = partial.options.caseSensitive ? '' : 'i'
+            const value = partial.options.startsWith
+              ? `^${partial.value}`
+              : partial.options.endsWith
+                ? `${partial.value}$`
+                : `^${partial.value}$`
+            const reg = new RegExp(value, flag)
+            return (obj) => reg.test(obj[partial.name])
+          } else if (partial.options.type === 'number') {
+            const symbol = partial.options.equalitySymbol
+            if (!symbol){
+              throw new Error(`No symbol provided!`)
+            }
+            const operation = _equalitySymbolToOperation[symbol]
+            if (!operation) {
+              throw new Error(`Symbol ${symbol} is not supported`)
+            }
+            return operation(partial.name, partial.value)
+          }
+          return () => undefined
         })
       if (!(modelName in db)) {
         return {
@@ -112,7 +134,7 @@ const memoryDatastoreProvider = (
       const results = values(models)
         .filter(obj => {
           if (searches.length > 0) {
-            const match = searches.find(([name, regex])=> regex.test(obj[name]))
+            const match = searches.find(method => method(obj))
             if (!match) {
               return false
             }

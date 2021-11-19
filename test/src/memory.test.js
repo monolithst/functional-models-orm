@@ -1,6 +1,7 @@
 const assert = require('chai').assert
 const { Model, TextProperty, UniqueId } = require('functional-models')
 const datastore = require('../../src/datastore/memory')
+const { EQUALITY_SYMBOLS } = require('../../src/ormQuery')
 
 const TEST_MODEL1 = Model('TestModel1', {
   id: UniqueId(),
@@ -48,6 +49,7 @@ describe('/src/datastore/memory.js', () => {
                 name: 'name',
                 value: 'unit-test',
                 options: {
+                  type: 'string',
                   startsWith: true,
                 },
               }
@@ -171,6 +173,153 @@ describe('/src/datastore/memory.js', () => {
         const expected = [
           { id: '123', name: 'unit-test' },
           { id: '234', name: 'unit-test' },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 2 instances when when greater than 2', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4},
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'value',
+                value: 2,
+                options: {
+                  type: 'number',
+                  equalitySymbol: EQUALITY_SYMBOLS.GT,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [
+          { id: '234', value: 3 },
+          { id: '345', value: 4 },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 3 instances when when GTE 2', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4},
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'value',
+                value: 2,
+                options: {
+                  type: 'number',
+                  equalitySymbol: EQUALITY_SYMBOLS.GTE,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [
+          { id: '123', value: 2 },
+          { id: '234', value: 3 },
+          { id: '345', value: 4 },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 1 instances when when less than 2', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '012', value: 1 },
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4},
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'value',
+                value: 2,
+                options: {
+                  type: 'number',
+                  equalitySymbol: EQUALITY_SYMBOLS.LT,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [
+          { id: '012', value: 1 },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 2 instances when when LTE 2', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '012', value: 1 },
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4},
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'value',
+                value: 2,
+                options: {
+                  type: 'number',
+                  equalitySymbol: EQUALITY_SYMBOLS.LTE,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [
+          { id: '123', value: 2 },
+          { id: '012', value: 1 },
+        ]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 1 instances when when = 2', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1.getName()]: [
+            { id: '012', value: 1 },
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4},
+          ],
+        })
+        const actual = (
+          await datastoreProvider.search(TEST_MODEL1, {
+            properties: {
+              name: {
+                type: 'property',
+                name: 'value',
+                value: 2,
+                options: {
+                  type: 'number',
+                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                },
+              },
+            },
+          })
+        ).instances
+        const expected = [
+          { id: '123', value: 2 },
         ]
         assert.deepEqual(actual, expected)
       })

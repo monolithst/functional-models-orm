@@ -1,13 +1,18 @@
 {
   "name": "functional-models-orm",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "A basic ORM building library using the functional-models library.",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "nyc --all mocha --recursive './test/**/*.test.js'",
+    "prepublish": "npm run build",
+    "test": "npm run build && nyc --all mocha --recursive './test/**/*.test.js'",
     "feature-tests": "./node_modules/@cucumber/cucumber/bin/cucumber-js",
-    "coverage": "nyc --all --reporter=lcov npm test"
+    "coverage": "npm run build && nyc --all --reporter=lcov npm test",
+    "build": "rm -Rf ./dist && mkdir -p ./dist && cp -R ./src/* ./dist &&  cd ./dist && tsc -p ../tsconfig.json"
   },
+  "files": [
+    "dist/"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/monolithst/functional-models-orm.git"
@@ -34,6 +39,7 @@
     "url": "https://github.com/monolithst/functional-models-orm/issues"
   },
   "devDependencies": {
+    "@types/node": "^16.11.7",
     "babel-eslint": "^10.1.0",
     "chai": "^4.3.0",
     "cucumber": "^7.0.0-rc.0",
@@ -44,7 +50,8 @@
     "mocha": "^8.2.1",
     "nyc": "^15.1.0",
     "proxyquire": "^2.1.3",
-    "sinon": "^11.1.2"
+    "sinon": "^11.1.2",
+    "typescript": "^4.5.2"
   },
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
