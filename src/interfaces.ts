@@ -1,17 +1,16 @@
 import {
+  Arrayable,
+  FunctionalType,
   Maybe,
   ModelInstance,
   Model,
   FunctionalModel,
   PrimaryKeyType,
   ModelInstanceInputData,
-  JsonAble,
-  ModelFactory,
   ModelDefinition,
   OptionalModelOptions,
   ModelOptions, PropertyConfig, CreateParams,
 } from 'functional-models/interfaces'
-import {unique, uniqueTogether} from "./validation"
 
 type SaveMethod<T extends FunctionalModel> = (instance: OrmModelInstance<T>) => Promise<OrmModelInstance<T>>
 type DeleteMethod<T extends FunctionalModel> = (instance: OrmModelInstance<T>) => Promise<void>
@@ -179,7 +178,7 @@ type OrmQueryStatement = DatesAfterStatement |
   OrStatement
 
 
-type OrmPropertyConfig = PropertyConfig & {
+type OrmPropertyConfig<T extends Arrayable<FunctionalType>> = PropertyConfig<T> & {
   unique?: string,
   uniqueTogether?: readonly string[]
 }

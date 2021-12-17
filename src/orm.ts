@@ -39,33 +39,23 @@ const orm = ({ datastoreProvider, BaseModel = functionalModel }: { datastoreProv
   }
 
   const _retrievedObjToModel = <T extends FunctionalModel>(model: Model<T>) => (obj: ModelInstanceInputData<T>) : OrmModelInstance<T> => {
-    const keyToProperty = merge({}, obj, {
-      meta: {
+    return merge(model.create(obj) as OrmModelInstance<T>, {
+      methods: {
         isDirty: isDirtyFalse,
-      },
+      }
     })
-    return model.create(keyToProperty) as OrmModelInstance<T>
   }
 
   const fetcher : ModelFetcher = <T extends FunctionalModel>(model: Model<T>, id: PrimaryKeyType) => {
-    return retrieve(model as OrmModel<T>)(id)
+    return retrieve(model as OrmModel<T>, id)
   }
 
-  const retrieve = <T extends FunctionalModel>(model: OrmModel<T>) => async (id: PrimaryKeyType) => {
+  const retrieve = async <T extends FunctionalModel>(model: OrmModel<T>, id: PrimaryKeyType) => {
     const obj = await datastoreProvider.retrieve(model, id)
     if (!obj) {
       return undefined
     }
     return _retrievedObjToModel(model)(obj)
-  }
-
-  const bulkInsert = <T extends FunctionalModel>(model: OrmModel<T>) => async (instances: readonly OrmModelInstance<T>[]) => {
-    if (datastoreProvider.bulkInsert) {
-      await datastoreProvider.bulkInsert(model, instances)
-      return undefined
-    } 
-      await Promise.all(instances.map(x=>x.save()))
-      return undefined
   }
 
   const _defaultOptions = <T extends FunctionalModel>(): OrmModelOptions<T> => ({
@@ -99,6 +89,19 @@ const orm = ({ datastoreProvider, BaseModel = functionalModel }: { datastoreProv
           page: result.page,
         }
       })
+    }
+
+    const bulkInsert = async(instances: readonly OrmModelInstance<T>[]) => {
+      if (datastoreProvider.bulkInsert) {
+        await datastoreProvider.bulkInsert(model, instances)
+        return undefined
+      }
+      await Promise.all(instances.map(x=>x.save()))
+      return undefined
+    }
+
+    const loadedRetrieve = <T extends FunctionalModel>(id: PrimaryKeyType) => {
+      return retrieve(model, id)
     }
 
     const ormModelDefinitions = {
@@ -140,7 +143,6 @@ const orm = ({ datastoreProvider, BaseModel = functionalModel }: { datastoreProv
         const response = await datastoreProvider.createAndSave(data)
         return _retrievedObjToModel(model)(response)
       } else {
-        const inputData : ModelInstanceInputData<T> = await data.toObj()
         const instance = model.create((await data.toObj()) as ModelInstanceInputData<T>) as OrmModelInstance<T>
         return instance.save()
       }
@@ -211,10 +213,10 @@ const orm = ({ datastoreProvider, BaseModel = functionalModel }: { datastoreProv
         create,
         save,
         delete: deleteObj,
-        retrieve: retrieve(model),
+        retrieve: loadedRetrieve,
         search,
         createAndSave,
-        bulkInsert: bulkInsert(model),
+        bulkInsert,
       }
     )
     return model

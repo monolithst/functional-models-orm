@@ -1,7 +1,7 @@
 import merge from 'lodash/merge'
 import identity from 'lodash/identity'
 import { DateProperty } from 'functional-models'
-import { PropertyConfig } from "functional-models/interfaces"
+import { PropertyConfig, Maybe, Arrayable, FunctionalType} from "functional-models/interfaces"
 import { unique, uniqueTogether } from './validation'
 import { OrmPropertyConfig } from './interfaces'
 
@@ -10,12 +10,12 @@ const _defaultPropertyConfig = {
   uniqueTogether: undefined,
 }
 
-const LastModifiedDateProperty = (config? : PropertyConfig) => {
+const LastModifiedDateProperty = (config: PropertyConfig<Maybe<string|Date>> = {}) => {
   const additionalMetadata = { lastModifiedUpdateMethod: () => new Date() }
   return DateProperty(config, additionalMetadata)
 }
 
-const ormPropertyConfig = (config: OrmPropertyConfig = _defaultPropertyConfig) => {
+const ormPropertyConfig = <T extends Arrayable<FunctionalType>>(config: OrmPropertyConfig<T> = _defaultPropertyConfig) => {
   return merge(config, {
     validators: [
       ...(config.validators ? config.validators : []),

@@ -4,11 +4,11 @@
   "description": "A basic ORM building library using the functional-models library.",
   "main": "dist/index.js",
   "scripts": {
-    "test": "TS_NODE_COMPILETER_OPTIONS='{\"esModuleInterop\": true}' && mocha -r ts-node/register test/**/*.test.ts",
+    "test": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage": "nyc npm run test",
     "feature-tests": "./node_modules/.bin/cucumber-js -p default",
     "coverage": "nyc --all --reporter=lcov npm test",
-    "dist": "tsc && cp package.json ./dist && cp README.md ./dist && cd dist && npm publish"
+    "dist": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist && cd dist && npm publish"
   },
   "files": [
     "dist/"

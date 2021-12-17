@@ -82,7 +82,7 @@ describe('/src/orm.ts', () => {
           )
           const actual = model.create({
             name: 'my-name',
-          }) as OrmModelInstance<{}>
+          })
           assert.isTrue(actual.methods.isDirty())
         })
         describe('#delete()', () => {
@@ -183,7 +183,7 @@ describe('/src/orm.ts', () => {
             const expected = modelInstance
             assert.deepEqual(actual, expected)
           })
-          it('should return an instance where meta.isDirty === false', async () => {
+          it('should return an instance where methods.isDirty() === false', async () => {
             const datastoreProvider = {
               save: sinon.stub().returns({ name: 'my-name' }),
             }
@@ -244,7 +244,7 @@ describe('/src/orm.ts', () => {
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel('MyModel', { properties: {}}, {})
+        const model = instance.BaseModel<{}>('MyModel', { properties: {}}, {})
         await instance.fetcher(model, 'my-id')
 
         const actual = datastoreProvider.retrieve.getCall(0).args
@@ -260,7 +260,7 @@ describe('/src/orm.ts', () => {
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel(
+        const model = instance.BaseModel<{name: string}>(
           'MyModel',
           {
             properties: {

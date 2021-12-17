@@ -49,7 +49,7 @@ const memoryDatastoreProvider = (
     {}
   )
 
-  const save = <T extends FunctionalModel>(instance: OrmModelInstance<T>) => {
+  const save = <T extends FunctionalModel>(instance: OrmModelInstance<T>) : Promise<ModelInstanceInputData<T>> => {
     return (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
@@ -62,7 +62,7 @@ const memoryDatastoreProvider = (
           // eslint-disable-next-line functional/immutable-data
           // @ts-ignore
           db[modelName][obj[primaryKey]] = obj
-          return obj
+          return obj as ModelInstanceInputData<T>
         })
     )
   }
@@ -86,7 +86,12 @@ const memoryDatastoreProvider = (
     return Promise.resolve().then(() => {
       const modelName = model.getName()
       const key = `${modelName}.${primaryKey}`
-      return get(db, key, undefined) as ModelInstanceInputData<T>
+      const x = get(db, key, undefined)
+      if (!x) {
+        return undefined
+      }
+      // @ts-ignore
+      return x as ModelInstanceInputData<T>
     })
   }
 
