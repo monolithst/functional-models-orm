@@ -1,18 +1,20 @@
-const get = require('lodash/get')
-const pick = require('lodash/pick')
-const assert = require('chai').assert
-const { ormQueryBuilder } = require('../../dist/ormQuery')
+import get from 'lodash/get'
+import pick from 'lodash/pick'
+import {assert} from 'chai'
+import {ormQueryBuilder} from '../../src/ormQuery'
+import {EQUALITY_SYMBOLS, OrmQueryStatement, ORMType, PropertyStatement, AndStatement, OrStatement} from '../../src/interfaces'
 
-const TEST_OBJS = {
+
+const TEST_OBJS : {[s: string]: PropertyStatement} = {
   'my-name': {
     type: 'property',
     name: 'my-name',
     value: 'my-value',
-    valueType: 'string',
+    valueType: ORMType.string,
     options: {
       caseSensitive: false,
       startsWith: false,
-      equalitySymbol: '=',
+      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
       endsWith: false,
     },
   },
@@ -20,11 +22,11 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name2',
     value: 'my-value2',
-    valueType: 'string',
+    valueType: ORMType.string,
     options: {
       caseSensitive: false,
       startsWith: true,
-      equalitySymbol: '=',
+      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
       endsWith: false,
     },
   },
@@ -32,11 +34,11 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name3',
     value: 'my-value3',
-    valueType: 'string',
+    valueType: ORMType.string,
     options: {
       caseSensitive: true,
       startsWith: false,
-      equalitySymbol: '=',
+      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
       endsWith: false,
     },
   },
@@ -44,11 +46,11 @@ const TEST_OBJS = {
     type: 'property',
     name: 'my-name4',
     value: 'my-value4',
-    valueType: 'string',
+    valueType: ORMType.string,
     options: {
       caseSensitive: false,
       startsWith: false,
-      equalitySymbol: '=',
+      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
       endsWith: true,
     },
   },
@@ -77,6 +79,7 @@ describe('/src/ormQuery.ts', () => {
       const result = builder
         .property('my-name', 'my-value')
         .property('my-name2', 'my-value2')
+        // @ts-ignore
         .take('5')
         .compile()
       const actual = get(result, 'take')
@@ -127,26 +130,33 @@ describe('/src/ormQuery.ts', () => {
         .pagination(2)
         .take(5)
         .compile()
-      const actual = pick(result, ['properties', 'chain'])
-      const expected = {
-        properties: TEST_OBJS,
-        chain: [
+      const actual : {
+        properties: {
+          [s: string]: PropertyStatement
+        },
+        chain: OrmQueryStatement[],
+      } = pick(result, ['properties', 'chain'])
+      const expectedChain : readonly OrmQueryStatement[] = [
           TEST_OBJS['my-name'],
-          { type: 'and' },
+          { type: 'and' } as AndStatement,
           TEST_OBJS['my-name2'],
-          { type: 'or' },
+          { type: 'or' } as OrStatement,
           TEST_OBJS['my-name3'],
           { type: 'or' },
           TEST_OBJS['my-name4'],
           { type: 'page', value: 2 },
           { type: 'take', value: 5 },
-        ],
+        ]
+      const expected = {
+        properties: TEST_OBJS,
+        chain: expectedChain
       }
       assert.deepEqual(actual, expected)
     })
     it('should throw an exception if take("not-a-number") is called', () => {
       const builder = ormQueryBuilder()
       assert.throws(() => {
+        // @ts-ignore
         builder.take('not-a-number')
       })
     })

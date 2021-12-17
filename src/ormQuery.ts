@@ -102,12 +102,13 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
   }
 
   const pagination = (value: any) => {
+    const pageStatement : PaginationStatement = {
+      type: 'page',
+      value,
+    }
     return ormQueryBuilder([
       ...queryData,
-      {
-        type: 'page',
-        value,
-      },
+      pageStatement
     ])
   }
 

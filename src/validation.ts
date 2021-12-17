@@ -33,7 +33,7 @@ const _doUniqueCheck = async (
   return buildErrorMessage()
 }
 
-const uniqueTogether = (propertyKeyArray: string[]) => {
+const uniqueTogether = (propertyKeyArray: readonly string[]) => {
   const _uniqueTogether = async (instance: any, instanceData: any, options=buildOrmValidationOptions({})) => {
     if (options.noOrmValidation) {
       return undefined
@@ -72,7 +72,7 @@ const buildOrmValidationOptions = ({
   noOrmValidation,
 })
 
-module.exports = {
+export {
   unique,
   uniqueTogether,
   buildOrmValidationOptions,
