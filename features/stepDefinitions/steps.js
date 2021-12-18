@@ -51,7 +51,7 @@ Given('orm using the {word}', function (store) {
     throw new Error(`${store} did not result in a datastore.`)
   }
 
-  this.Model = orm({ datastoreProvider: store }).Model
+  this.BaseModel = orm({ datastoreProvider: store }).Model
   this.datastoreProvider = store
 })
 

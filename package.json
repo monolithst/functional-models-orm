@@ -1,8 +1,9 @@
 {
   "name": "functional-models-orm",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A basic ORM building library using the functional-models library.",
-  "main": "dist/index.js",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage": "nyc npm run test",
@@ -10,9 +11,6 @@
     "coverage": "nyc --all --reporter=lcov npm test",
     "dist": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist && cd dist && npm publish"
   },
-  "files": [
-    "dist/"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/monolithst/functional-models-orm.git"
