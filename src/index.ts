@@ -5,11 +5,4 @@ import * as validation from './validation'
 import * as properties from './properties'
 import * as interfaces from './interfaces'
 
-export {
-  interfaces,
-  orm,
-  ormQuery,
-  datastore,
-  validation,
-  properties
-}
+export { interfaces, orm, ormQuery, datastore, validation, properties }

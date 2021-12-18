@@ -1,8 +1,9 @@
-const assert = require('chai').assert
-const sinon = require('sinon')
-const { ormPropertyConfig } = require('../../dist/properties')
+import { assert } from 'chai'
+import sinon from 'sinon'
+import { ormPropertyConfig } from '../../src/properties'
+import { unique } from '../../src/validation'
 
-describe('/src/properties.js', () => {
+describe('/src/properties.ts', () => {
   describe('#ormPropertyConfig()', () => {
     it('should return one validator when unique:key is set', () => {
       const input = { unique: 'key' }
@@ -23,8 +24,8 @@ describe('/src/properties.js', () => {
       assert.equal(actual, expected)
     })
     it('should return two validators when unique:key and another validator is added', () => {
-      const input = { unique: 'key', validators: [() => ({})] }
-      const actual = ormPropertyConfig(input).validators.length
+      const input = { unique: 'key', validators: [unique('somethingelse')] }
+      const actual = ormPropertyConfig<string>(input).validators.length
       const expected = 2
       assert.equal(actual, expected)
     })

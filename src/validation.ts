@@ -1,22 +1,31 @@
 import flow from 'lodash/flow'
+import {
+  ModelValidatorComponent,
+  PropertyValidatorComponentAsync,
+  FunctionalModel,
+  PrimaryKeyType,
+  ModelError,
+  JsonAble,
+  ModelInstance,
+} from 'functional-models/interfaces'
 import { ormQueryBuilder } from './ormQuery'
-import { OrmQuery } from './interfaces'
+import { OrmQuery, OrmValidatorConfiguration } from './interfaces'
 
 const _doUniqueCheck = async (
   query: OrmQuery,
   instance: any,
   instanceData: any,
-  buildErrorMessage: () => string
-) => {
-  const model = instance.meta.getModel()
+  buildErrorMessage: () => ModelError
+): Promise<ModelError> => {
+  const model = instance.getModel()
   const results = await model.search(query)
   const resultsLength = results.instances.length
   // There is nothing stored with this value.
   if (resultsLength < 1) {
     return undefined
   }
-  const ids : any[] = await Promise.all(
-    results.instances.map((x: any) => x.functions.getPrimaryKey())
+  const ids: readonly PrimaryKeyType[] = await Promise.all(
+    results.instances.map((x: any) => x.getPrimaryKey())
   )
   // We have our match by id.
   const instanceId = instanceData[model.getPrimaryKeyName()]
@@ -33,12 +42,19 @@ const _doUniqueCheck = async (
   return buildErrorMessage()
 }
 
-const uniqueTogether = (propertyKeyArray: readonly string[]) => {
-  const _uniqueTogether = async (instance: any, instanceData: any, options=buildOrmValidationOptions({})) => {
+const uniqueTogether = <T extends FunctionalModel>(
+  propertyKeyArray: readonly string[]
+) => {
+  const _uniqueTogether = async (
+    instance: ModelInstance<T>,
+    instanceData: T | JsonAble,
+    options: OrmValidatorConfiguration = buildOrmValidationOptions({})
+  ) => {
     if (options.noOrmValidation) {
       return undefined
     }
     const properties = propertyKeyArray.map(key => {
+      // @ts-ignore
       return [key, instanceData[key]]
     })
     const query = flow(
@@ -47,7 +63,9 @@ const uniqueTogether = (propertyKeyArray: readonly string[]) => {
           return b.property(key, value, { caseSensitive: false }).and()
         }
       })
-    )(ormQueryBuilder()).compile()
+    )(ormQueryBuilder())
+      .take(2)
+      .compile()
     return _doUniqueCheck(query, instance, instanceData, () => {
       return propertyKeyArray.length > 1
         ? `${propertyKeyArray.join(
@@ -59,21 +77,26 @@ const uniqueTogether = (propertyKeyArray: readonly string[]) => {
   return _uniqueTogether
 }
 
-const unique = (propertyKey: string) => {
-  const _unique = async (value: string, instance: any, instanceData: any, options: {noOrmValidation: boolean}) => {
-    return uniqueTogether([propertyKey])(instance, instanceData, options)
+const unique = <T extends FunctionalModel>(
+  propertyKey: string
+): PropertyValidatorComponentAsync<T> => {
+  const _unique: PropertyValidatorComponentAsync<T> = (
+    value,
+    instance,
+    instanceData,
+    options
+  ) => {
+    return uniqueTogether<T>([propertyKey])(instance, instanceData, options)
   }
+  //const _unique = async (value: string, instance: any, instanceData: any, options: {noOrmValidation: boolean}) => {
+  //}
   return _unique
 }
 
 const buildOrmValidationOptions = ({
-  noOrmValidation=false
-}) => ({
+  noOrmValidation = false,
+}): OrmValidatorConfiguration => ({
   noOrmValidation,
 })
 
-export {
-  unique,
-  uniqueTogether,
-  buildOrmValidationOptions,
-}
+export { unique, uniqueTogether, buildOrmValidationOptions }

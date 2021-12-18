@@ -87,11 +87,11 @@ When('an instance of the model is created with {word}', function (dataKey) {
 })
 
 When('save is called on the instances', function () {
-  return Promise.all(this.instances.map(x => x.functions.save()))
+  return Promise.all(this.instances.map(x => x.save()))
 })
 
 When('save is called on the model', function () {
-  return this.modelInstance.functions.save().then(x => (this.saveResult = x))
+  return this.modelInstance.save().then(x => (this.saveResult = x))
 })
 
 When('delete is called on the model', function () {

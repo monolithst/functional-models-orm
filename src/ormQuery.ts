@@ -1,65 +1,84 @@
 import merge from 'lodash/merge'
-import { OrmQuery, OrmQueryStatement, TakeStatement, PaginationStatement , DatesBeforeStatement, DatesAfterStatement, SortStatement, PropertyStatement, AndStatement, OrStatement, EQUALITY_SYMBOLS, ORMType, ALLOWABLE_EQUALITY_SYMBOLS} from './interfaces'
+import {
+  OrmQuery,
+  OrmQueryStatement,
+  TakeStatement,
+  PaginationStatement,
+  DatesBeforeStatement,
+  DatesAfterStatement,
+  SortStatement,
+  PropertyStatement,
+  AndStatement,
+  OrStatement,
+} from './interfaces'
+import {
+  EQUALITY_SYMBOLS,
+  ORMType,
+  ALLOWABLE_EQUALITY_SYMBOLS,
+} from './constants'
 
-const compile = (queryData: OrmQueryStatement[]) => () : OrmQuery => {
+const compile = (queryData: readonly OrmQueryStatement[]) => (): OrmQuery => {
   // TODO: This does not handle AND/OR at all.
-  const startingQuery : OrmQuery = { properties: {}, chain: queryData }
-  return queryData.reduce(
-    (acc, partial) => {
-      if (partial.type === 'property') {
-        return merge(acc, { properties: { [partial.name]: partial } })
-      } else if (partial.type === 'and') {
-        return acc
-      } else if (partial.type === 'or') {
-        return acc
-      } else if (partial.type === 'datesAfter') {
-        return acc.datesAfter
-          ? merge(acc, { datesAfter: {...acc.datesAfter, [partial.key]: partial } })
-          : merge(acc, { datesAfter: {[partial.key]: partial} })
-      } else if (partial.type === 'datesBefore') {
-        return acc.datesBefore
-          ? merge(acc, { datesBefore: {...acc.datesBefore, [partial.key]: partial } })
-          : merge(acc, { datesBefore: {[partial.key]: partial} })
-      } else if (partial.type === 'sort') {
-        return merge(acc, { [partial.type]: partial })
-      }
-      return merge(acc, { [partial.type]: partial.value })
-    },
-    startingQuery
-  )
+  const startingQuery: OrmQuery = { properties: {}, chain: queryData }
+  return queryData.reduce((acc, partial) => {
+    if (partial.type === 'property') {
+      return merge(acc, { properties: { [partial.name]: partial } })
+    } else if (partial.type === 'and') {
+      return acc
+    } else if (partial.type === 'or') {
+      return acc
+    } else if (partial.type === 'datesAfter') {
+      return acc.datesAfter
+        ? merge(acc, {
+            datesAfter: { ...acc.datesAfter, [partial.key]: partial },
+          })
+        : merge(acc, { datesAfter: { [partial.key]: partial } })
+    } else if (partial.type === 'datesBefore') {
+      return acc.datesBefore
+        ? merge(acc, {
+            datesBefore: { ...acc.datesBefore, [partial.key]: partial },
+          })
+        : merge(acc, { datesBefore: { [partial.key]: partial } })
+    } else if (partial.type === 'sort') {
+      return merge(acc, { [partial.type]: partial })
+    }
+    return merge(acc, { [partial.type]: partial.value })
+  }, startingQuery)
 }
 
-
-const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
-  const datesAfter = (key: string, jsDate: Date|string, { valueType=ORMType.string, equalToAndAfter=true}) => {
-    const datesAfter : DatesAfterStatement = {
+const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
+  const datesAfter = (
+    key: string,
+    jsDate: Date | string,
+    { valueType = ORMType.string, equalToAndAfter = true }
+  ) => {
+    const datesAfter: DatesAfterStatement = {
       type: 'datesAfter',
       key,
       date: jsDate,
       valueType,
       options: {
-        equalToAndAfter
-      }
+        equalToAndAfter,
+      },
     }
-    return ormQueryBuilder([
-      ...queryData,
-      datesAfter,
-    ])
+    return _addStatementAndReturn(datesAfter)
   }
 
-  const datesBefore = (key: string, jsDate:Date|string, { valueType=ORMType.string, equalToAndBefore=true}) => {
-    return ormQueryBuilder([
-      ...queryData,
-      {
-        type: 'datesBefore',
-        key,
-        date: jsDate,
-        valueType,
-        options: {
-          equalToAndBefore,
-        },
+  const datesBefore = (
+    key: string,
+    jsDate: Date | string,
+    { valueType = ORMType.string, equalToAndBefore = true }
+  ) => {
+    const datesBeforeStatement: DatesBeforeStatement = {
+      type: 'datesBefore',
+      key,
+      date: jsDate,
+      valueType,
+      options: {
+        equalToAndBefore,
       },
-    ])
+    }
+    return _addStatementAndReturn(datesBeforeStatement)
   }
 
   const property = (
@@ -69,8 +88,8 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
       caseSensitive = false,
       startsWith = false,
       endsWith = false,
-      type=ORMType.string,
-      equalitySymbol=EQUALITY_SYMBOLS.EQUALS
+      type = ORMType.string,
+      equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
     } = {}
   ) => {
     if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
@@ -83,7 +102,7 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
       type = ORMType.string
     }
 
-    const propertyEntry : PropertyStatement =  {
+    const propertyEntry: PropertyStatement = {
       type: 'property',
       name,
       value,
@@ -95,21 +114,15 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
         equalitySymbol,
       },
     }
-    return ormQueryBuilder([
-      ...queryData,
-      propertyEntry,
-    ])
+    return _addStatementAndReturn(propertyEntry)
   }
 
   const pagination = (value: any) => {
-    const pageStatement : PaginationStatement = {
+    const pageStatement: PaginationStatement = {
       type: 'page',
       value,
     }
-    return ormQueryBuilder([
-      ...queryData,
-      pageStatement
-    ])
+    return _addStatementAndReturn(pageStatement)
   }
 
   const take = (count: number) => {
@@ -117,34 +130,38 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
     if (Number.isNaN(parsed)) {
       throw new Error(`${count} must be an integer.`)
     }
-    return ormQueryBuilder([
-      ...queryData,
-      {
-        type: 'take',
-        value: parsed,
-      },
-    ])
+
+    const takeStatement: TakeStatement = {
+      type: 'take',
+      value: parsed,
+    }
+    return _addStatementAndReturn(takeStatement)
   }
 
-  const sort = (key: string, isAscending=true) => {
+  const sort = (key: string, isAscending = true) => {
     if (typeof isAscending !== 'boolean') {
       throw new Error('Must be a boolean type')
     }
-    return ormQueryBuilder([
-      ...queryData,
-      {
-        type: 'sort',
-        key,
-        order: isAscending,
-      },
-    ])
+    const sortStatement: SortStatement = {
+      type: 'sort',
+      key,
+      order: isAscending,
+    }
+    return _addStatementAndReturn(sortStatement)
   }
 
   const and = () => {
-    return ormQueryBuilder([...queryData, { type: 'and' }])
+    const statement: AndStatement = { type: 'and' }
+    return _addStatementAndReturn(statement)
   }
+
   const or = () => {
-    return ormQueryBuilder([...queryData, { type: 'or' }])
+    const statement: OrStatement = { type: 'or' }
+    return _addStatementAndReturn(statement)
+  }
+
+  const _addStatementAndReturn = (statement: OrmQueryStatement) => {
+    return ormQueryBuilder([...queryData, statement])
   }
 
   return {
@@ -160,7 +177,4 @@ const ormQueryBuilder = (queryData : OrmQueryStatement[] = []) => {
   }
 }
 
-export {
-  ormQueryBuilder,
-  EQUALITY_SYMBOLS,
-}
+export { ormQueryBuilder }
