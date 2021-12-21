@@ -1,6 +1,6 @@
 import {
   Arrayable,
-  FunctionalType,
+  FunctionalValue,
   Maybe,
   ModelInstance,
   Model,
@@ -199,7 +199,7 @@ type OrmQueryStatement =
   | AndStatement
   | OrStatement
 
-type OrmPropertyConfig<T extends Arrayable<FunctionalType>> =
+type OrmPropertyConfig<T extends Arrayable<FunctionalValue>> =
   PropertyConfig<T> & {
     readonly unique?: string
     readonly uniqueTogether?: readonly string[]
@@ -209,6 +209,8 @@ type OrmPropertyConfig<T extends Arrayable<FunctionalType>> =
 type OrmValidatorConfiguration = {
   readonly noOrmValidation?: boolean
 } & ValidatorConfiguration
+
+
 
 export {
   OrmQuery,

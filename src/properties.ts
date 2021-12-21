@@ -5,7 +5,7 @@ import {
   PropertyConfig,
   Maybe,
   Arrayable,
-  FunctionalType,
+  FunctionalValue,
 } from 'functional-models/interfaces'
 import { unique, uniqueTogether } from './validation'
 import { OrmPropertyConfig } from './interfaces'
@@ -22,7 +22,7 @@ const LastModifiedDateProperty = (
   return DateProperty(config, additionalMetadata)
 }
 
-const ormPropertyConfig = <T extends Arrayable<FunctionalType>>(
+const ormPropertyConfig = <T extends Arrayable<FunctionalValue>>(
   config: OrmPropertyConfig<T> = _defaultPropertyConfig
 ) => {
   return merge(config, {

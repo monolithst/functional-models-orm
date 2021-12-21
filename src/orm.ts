@@ -10,6 +10,7 @@ import {
   FunctionalModel,
   ModelInstance,
   CreateParams,
+  PropertyInstance,
 } from 'functional-models/interfaces'
 import {
   OrmModelInstance,
@@ -129,9 +130,10 @@ const orm = ({
     ): Promise<OrmModelInstance<T>> => {
       const hasLastModified = Object.entries(
         instance.getModel().getModelDefinition().properties
-      ).filter(([, property]) =>
-        Boolean('lastModifiedUpdateMethod' in property)
-      )[0]
+      ).filter(propertyEntry => {
+        const property = propertyEntry[1] as PropertyInstance<any>
+        return Boolean('lastModifiedUpdateMethod' in property)
+      })[0]
 
       return hasLastModified
         ? // @ts-ignore
