@@ -10,9 +10,6 @@
     "coverage": "npm run build && nyc --all --reporter=lcov npm test",
     "build": "rm -Rf ./dist && mkdir -p ./dist && cp -R ./src/* ./dist &&  cd ./dist && tsc -p ../tsconfig.json"
   },
-  "files": [
-    "dist/"
-  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/monolithst/functional-models-orm.git"
