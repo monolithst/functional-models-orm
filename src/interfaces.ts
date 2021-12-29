@@ -105,7 +105,7 @@ type DatastoreProvider = {
     query: OrmQuery
   ) => Promise<DatastoreSearchResult<T>>
   readonly bulkInsert?: <T extends FunctionalModel, TModel extends OrmModel<T>>(
-    model: OrmModel<T>,
+    model: TModel,
     instances: readonly OrmModelInstance<T, TModel>[]
   ) => Promise<void>
   readonly createAndSave?: <T extends FunctionalModel, TModel extends OrmModel<T>>(
