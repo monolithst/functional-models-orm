@@ -157,7 +157,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel(
+            const model = instance.BaseModel<{name: string}>(
               'MyModel',
               {
                 properties: {
@@ -223,7 +223,7 @@ describe('/src/orm.ts', () => {
           it('should throw an exception if the model has validation errors and save is called', () => {
             const datastoreProvider = createDatastore()
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel(
+            const model = instance.BaseModel<{name: string}>(
               'MyModel',
               {
                 properties: {
@@ -246,7 +246,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel(
+            const model = instance.BaseModel<{name: string}>(
               'MyModel',
               {
                 properties: {
@@ -269,7 +269,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel(
+            const model = instance.BaseModel<{name: string}>(
               'MyModel',
               {
                 properties: {

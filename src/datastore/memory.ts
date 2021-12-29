@@ -21,27 +21,32 @@ import {
   DatastoreSearchResult,
 } from '../interfaces'
 
-const _getDbEntryInfo = async <T extends FunctionalModel>(
-  instance: OrmModelInstance<T>
+const _getDbEntryInfo = async <T extends FunctionalModel, TModel extends OrmModel<T>>(
+  instance: OrmModelInstance<T, TModel>
 ) => {
   const modelName: string = instance.getModel().getName()
   const obj = await instance.toObj()
+  // eslint-disable-next-line functional/prefer-readonly-type
   const r: [s: string, o: JsonAble] = [modelName, obj]
   return r
 }
 
 type ModelType = string
 type SeedModels = {
+  // eslint-disable-next-line functional/prefer-readonly-type
   [s: ModelType]: readonly ModelInstanceInputData<any>[]
 }
 
 type ModelsDb = {
+  // eslint-disable-next-line functional/prefer-readonly-type
   [s: ModelType]: {
+    // eslint-disable-next-line functional/prefer-readonly-type
     [s: PrimaryKeyType]: readonly ModelInstanceInputData<any>[]
   }
 }
 
 type SimpleObj = {
+  // eslint-disable-next-line functional/prefer-readonly-type
   [s: string]: any
 }
 
@@ -63,28 +68,28 @@ const memoryDatastoreProvider = (
     {}
   )
 
-  const save = <T extends FunctionalModel>(
-    instance: OrmModelInstance<T>
-  ): Promise<ModelInstanceInputData<T>> => {
+  const save = <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    instance: OrmModelInstance<T, TModel>
+  ): Promise<ModelInstanceInputData<T, any>> => {
     return (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
         .then(async () => {
-          const [modelName, obj] = await _getDbEntryInfo<T>(instance)
+          const [modelName, obj] = await _getDbEntryInfo<T, TModel>(instance)
           if (!(modelName in db)) {
             // eslint-disable-next-line functional/immutable-data
             db[modelName] = {}
           }
-          // eslint-disable-next-line functional/immutable-data
           // @ts-ignore
+          // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
-          return obj as ModelInstanceInputData<T>
+          return obj as ModelInstanceInputData<T, any>
         })
     )
   }
 
-  const deleteObj = <T extends FunctionalModel>(
-    instance: OrmModelInstance<T>
+  const deleteObj = <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    instance: OrmModelInstance<T, TModel>
   ) => {
     return (
       Promise.resolve()
@@ -94,6 +99,7 @@ const memoryDatastoreProvider = (
           // eslint-disable-next-line no-undef,functional/immutable-data
           if (obj) {
             // @ts-ignore
+            // eslint-disable-next-line functional/immutable-data
             delete db[modelName][obj[primaryKey]]
           }
         })
@@ -112,11 +118,12 @@ const memoryDatastoreProvider = (
         return undefined
       }
       // @ts-ignore
-      return x as ModelInstanceInputData<T>
+      return x as ModelInstanceInputData<T, any>
     })
   }
 
   const _equalitySymbolToOperation: {
+    // eslint-disable-next-line functional/prefer-readonly-type
     [s: string]: (name: string, value: any) => (obj: SimpleObj) => boolean
   } = {
     '=': (name, value) => obj => value === obj[name],
@@ -126,8 +133,8 @@ const memoryDatastoreProvider = (
     '<': (name, value) => obj => obj[name] < value,
   }
 
-  const search = <T extends FunctionalModel>(
-    model: OrmModel<T>,
+  const search = <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    model: TModel,
     ormQuery: OrmQuery
   ): Promise<DatastoreSearchResult<T>> => {
     return Promise.resolve().then(() => {
@@ -164,10 +171,11 @@ const memoryDatastoreProvider = (
       }
       type ValidationFunc = (obj: SimpleObj) => boolean
       const models = db[modelName] as {
-        [s: PrimaryKeyType]: readonly ModelInstanceInputData<T>[]
+        // eslint-disable-next-line functional/prefer-readonly-type
+        [s: PrimaryKeyType]: readonly ModelInstanceInputData<T, any>[]
       }
       const beforeFilters = Object.entries(
-        ormQuery.datesBefore || ({} as { [s: string]: DatesBeforeStatement })
+        ormQuery.datesBefore || ({} as { readonly [s: string]: DatesBeforeStatement })
       ).reduce((acc, [key, partial]) => {
         const func = (theirObj: SimpleObj) => {
           // @ts-ignore
@@ -179,7 +187,7 @@ const memoryDatastoreProvider = (
             : before
         }
         return [...acc, func]
-      }, [] as ValidationFunc[])
+      }, [] as readonly ValidationFunc[])
       const afterFilters = Object.entries(ormQuery.datesAfter || {}).reduce(
         (acc, [key, partial]) => {
           return [
@@ -195,7 +203,7 @@ const memoryDatastoreProvider = (
             },
           ]
         },
-        [] as ValidationFunc[]
+        [] as readonly ValidationFunc[]
       )
       const results = flatten(values(models)).filter(obj => {
         if (searches.length > 0) {
@@ -223,7 +231,7 @@ const memoryDatastoreProvider = (
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
         : results
-      const sorted: readonly ModelInstanceInputData<T>[] = ormQuery.sort
+      const sorted: readonly ModelInstanceInputData<T, any>[] = ormQuery.sort
         ? orderBy(
             instances,
             [ormQuery.sort.key],

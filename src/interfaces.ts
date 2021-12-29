@@ -16,50 +16,50 @@ import {
 } from 'functional-models/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from './constants'
 
-type SaveMethod<T extends FunctionalModel> = (
-  instance: OrmModelInstance<T>
-) => Promise<OrmModelInstance<T>>
-type DeleteMethod<T extends FunctionalModel> = (
-  instance: OrmModelInstance<T>
+type SaveMethod<T extends FunctionalModel, TModel extends OrmModel<T>> = (
+  instance: OrmModelInstance<T, TModel>
+) => Promise<OrmModelInstance<T, TModel>>
+type DeleteMethod<T extends FunctionalModel, TModel extends OrmModel<T>> = (
+  instance: OrmModelInstance<T, TModel>
 ) => Promise<void>
-type SaveOverride<T extends FunctionalModel> = (
-  existingSave: SaveMethod<T>,
-  instance: OrmModelInstance<T>
-) => Promise<OrmModelInstance<T>>
-type DeleteOverride<T extends FunctionalModel> = (
-  existingDelete: DeleteMethod<T>,
-  instance: OrmModelInstance<T>
+type SaveOverride<T extends FunctionalModel, TModel extends OrmModel<T>> = (
+  existingSave: SaveMethod<T, TModel>,
+  instance: OrmModelInstance<T, TModel>
+) => Promise<OrmModelInstance<T, TModel>>
+type DeleteOverride<T extends FunctionalModel, TModel extends OrmModel<T>> = (
+  existingDelete: DeleteMethod<T, TModel>,
+  instance: OrmModelInstance<T, TModel>
 ) => Promise<void>
 
-type OrmSearchResult<T extends FunctionalModel> = {
-  readonly instances: readonly OrmModelInstance<T>[]
+type OrmSearchResult<T extends FunctionalModel, TModel extends OrmModel<T>> = {
+  readonly instances: readonly OrmModelInstance<T, TModel>[]
   readonly page?: any
 }
 
-type OrmOptionalModelOptions<T extends FunctionalModel> =
+type OrmOptionalModelOptions<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>> =
   | (OptionalModelOptions<T> & {
-      readonly save?: SaveOverride<T>
-      readonly delete?: DeleteOverride<T>
+      readonly save?: SaveOverride<T, TModel>
+      readonly delete?: DeleteOverride<T, TModel>
       readonly [s: string]: any
     })
   | undefined
 
-type OrmModelOptions<T extends FunctionalModel> =
+type OrmModelOptions<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>> =
   | (ModelOptions<T> & {
-      readonly save?: SaveOverride<T>
-      readonly delete?: DeleteOverride<T>
+      readonly save?: SaveOverride<T, TModel>
+      readonly delete?: DeleteOverride<T, TModel>
       readonly [s: string]: any
     })
   | undefined
 
-type OrmModelFactory = <T extends FunctionalModel>(
+type OrmModelFactory = <T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>>(
   modelName: string,
-  keyToProperty: ModelDefinition<T>,
-  options?: OrmOptionalModelOptions<T>
+  keyToProperty: ModelDefinition<T, TModel>,
+  options?: OrmOptionalModelOptions<T, TModel>
 ) => OrmModel<T>
 
 type DatastoreSearchResult<T extends FunctionalModel> = {
-  readonly instances: readonly ModelInstanceInputData<T>[]
+  readonly instances: readonly ModelInstanceInputData<T, any>[]
   readonly page?: any
 }
 
@@ -69,49 +69,51 @@ type OrmModel<T extends FunctionalModel> = {
   readonly retrieve: (
     primaryKey: PrimaryKeyType
   ) => Promise<Maybe<OrmModelInstance<T>>>
-  readonly search: (query: OrmQuery) => Promise<OrmSearchResult<T>>
+  readonly search: (query: OrmQuery) => Promise<OrmSearchResult<T, OrmModel<T>>>
   readonly createAndSave: (
     data: OrmModelInstance<T>
   ) => Promise<OrmModelInstance<T>>
   readonly bulkInsert: (
     instances: readonly OrmModelInstance<T>[]
   ) => Promise<void>
-  readonly create: (data: CreateParams<T>) => OrmModelInstance<T>
+  readonly create: (data: CreateParams<T, any>) => OrmModelInstance<T>
 } & Model<T>
 
-type OrmModelInstance<T extends FunctionalModel> = {
+type OrmModelInstance<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>> = {
   // eslint-disable-next-line functional/prefer-readonly-type
-  save: () => Promise<OrmModelInstance<T>>
+  save: () => Promise<OrmModelInstance<T, TModel>>
   // eslint-disable-next-line functional/prefer-readonly-type
   delete: () => Promise<void>
   readonly methods: {
     readonly isDirty: () => boolean
   }
-} & ModelInstance<T>
+} & ModelInstance<T, TModel>
 
 type DatastoreProvider = {
-  readonly save: <T extends FunctionalModel>(
-    instance: OrmModelInstance<T>
-  ) => Promise<ModelInstanceInputData<T>>
-  readonly delete: <T extends FunctionalModel>(
-    instance: OrmModelInstance<T>
+  readonly save: <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    instance: OrmModelInstance<T, TModel>
+  ) => Promise<ModelInstanceInputData<T, any>>
+  readonly delete: <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    instance: OrmModelInstance<T, TModel>
   ) => Promise<void>
   readonly retrieve: <T extends FunctionalModel>(
     model: OrmModel<T>,
     primaryKey: PrimaryKeyType
-  ) => Promise<Maybe<ModelInstanceInputData<T>>>
+  ) => Promise<Maybe<ModelInstanceInputData<T, any>>>
   readonly search: <T extends FunctionalModel>(
     model: OrmModel<T>,
     query: OrmQuery
   ) => Promise<DatastoreSearchResult<T>>
-  readonly bulkInsert?: <T extends FunctionalModel>(
+  readonly bulkInsert?: <T extends FunctionalModel, TModel extends OrmModel<T>>(
     model: OrmModel<T>,
-    instances: readonly OrmModelInstance<T>[]
+    instances: readonly OrmModelInstance<T, TModel>[]
   ) => Promise<void>
-  readonly createAndSave?: <T extends FunctionalModel>(
-    instance: OrmModelInstance<T>
-  ) => Promise<ModelInstanceInputData<T>>
+  readonly createAndSave?: <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    instance: OrmModelInstance<T, TModel>
+  ) => Promise<ModelInstanceInputData<T, any>>
 }
+
+
 
 type PropertyStatement = {
   readonly type: 'property'

@@ -33,57 +33,58 @@ const orm = ({
   BaseModel = functionalModel,
 }: {
   readonly datastoreProvider: DatastoreProvider
-  readonly BaseModel?: ModelFactory
+  readonly BaseModel?: ModelFactory,
 }) => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }
 
   const _retrievedObjToModel =
-    <T extends FunctionalModel>(model: Model<T>) =>
-    (obj: ModelInstanceInputData<T>): OrmModelInstance<T> => {
-      return merge(model.create(obj) as OrmModelInstance<T>, {
+    <T extends FunctionalModel, TModel extends OrmModel<T>>(model: TModel) =>
+    (obj: ModelInstanceInputData<T, any>): OrmModelInstance<T, TModel> => {
+      return merge(model.create(obj) as unknown as OrmModelInstance<T, TModel>, {
         methods: {
           isDirty: isDirtyFalse,
         },
       })
     }
 
-  const fetcher: ModelFetcher = <T extends FunctionalModel>(
+  const fetcher: ModelFetcher = <T extends FunctionalModel, TModel extends OrmModel<T>>(
     model: Model<T>,
     id: PrimaryKeyType
   ) => {
-    return retrieve(model as OrmModel<T>, id)
+    // @ts-ignore
+    return retrieve(model as TModel, id)
   }
 
-  const retrieve = async <T extends FunctionalModel>(
-    model: OrmModel<T>,
+  const retrieve = async <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    model: TModel,
     id: PrimaryKeyType
   ) => {
     const obj = await datastoreProvider.retrieve(model, id)
     if (!obj) {
       return undefined
     }
-    return _retrievedObjToModel(model)(obj)
+    return _retrievedObjToModel<T, TModel>(model)(obj)
   }
 
   const _defaultOptions = <
-    T extends FunctionalModel
-  >(): OrmModelOptions<T> => ({
+    T extends FunctionalModel, TModel extends OrmModel<T>
+  >(): OrmModelOptions<T, TModel> => ({
     instanceCreatedCallback: null,
   })
 
-  const _convertOptions = <T extends FunctionalModel>(
-    options?: OrmOptionalModelOptions<T>
+  const _convertOptions = <T extends FunctionalModel, TModel extends OrmModel<T>>(
+    options?: OrmOptionalModelOptions<T, TModel>
   ) => {
-    const r: OrmModelOptions<T> = merge({}, _defaultOptions(), options)
+    const r: OrmModelOptions<T, TModel> = merge({}, _defaultOptions(), options)
     return r
   }
 
-  const ThisModel: OrmModelFactory = <T extends FunctionalModel>(
+  const ThisModel: OrmModelFactory = <T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>>(
     modelName: string,
-    keyToProperty: ModelDefinition<T>,
-    options?: OrmOptionalModelOptions<T>
+    keyToProperty: ModelDefinition<T, TModel>,
+    options?: OrmOptionalModelOptions<T, TModel>
   ) => {
     /*
     NOTE: We need access to the model AFTER its built, so we have to have this state variable.
@@ -92,13 +93,14 @@ const orm = ({
     */
     // @ts-ignore
     // eslint-disable-next-line functional/no-let
-    let model: OrmModel<T> = null
-    const theOptions = _convertOptions(options)
+    let model: TModel = null
+    const theOptions = _convertOptions<T, TModel>(options)
 
     const search = (ormQuery: OrmQuery) => {
       return datastoreProvider.search(model, ormQuery).then(result => {
+        const conversionFunc = _retrievedObjToModel<T, TModel>(model)
         return {
-          instances: result.instances.map(_retrievedObjToModel(model)),
+          instances: result.instances.map(conversionFunc),
           page: result.page,
         }
       })
@@ -114,7 +116,7 @@ const orm = ({
     }
 
     const loadedRetrieve = (id: PrimaryKeyType) => {
-      return retrieve(model, id)
+      return retrieve<T, TModel>(model, id)
     }
 
     const ormModelDefinitions = {
@@ -126,8 +128,8 @@ const orm = ({
     const newKeyToProperty = merge({}, keyToProperty, ormModelDefinitions)
 
     const _updateLastModifiedIfExistsReturnNewObj = async (
-      instance: OrmModelInstance<T>
-    ): Promise<OrmModelInstance<T>> => {
+      instance: OrmModelInstance<T, TModel>
+    ): Promise<OrmModelInstance<T, TModel>> => {
       const hasLastModified = Object.entries(
         instance.getModel().getModelDefinition().properties
       ).filter(propertyEntry => {
@@ -143,13 +145,13 @@ const orm = ({
                 // @ts-ignore
                 hasLastModified[1].lastModifiedUpdateMethod(),
             })
-          ) as OrmModelInstance<T>)
+          ) as OrmModelInstance<T, TModel>)
         : instance
     }
 
     const save = async (
-      instance: OrmModelInstance<T>
-    ): Promise<OrmModelInstance<T>> => {
+      instance: OrmModelInstance<T, TModel>
+    ): Promise<OrmModelInstance<T, TModel>> => {
       return Promise.resolve().then(async () => {
         const newInstance = await _updateLastModifiedIfExistsReturnNewObj(
           instance
@@ -159,55 +161,55 @@ const orm = ({
           throw new ValidationError(modelName, valid)
         }
         const savedObj = await datastoreProvider.save(newInstance)
-        return _retrievedObjToModel(model)(savedObj)
+        return _retrievedObjToModel<T, TModel>(model)(savedObj)
       })
     }
 
     const createAndSave = async (
-      data: OrmModelInstance<T>
-    ): Promise<OrmModelInstance<T>> => {
+      data: OrmModelInstance<T, TModel>
+    ): Promise<OrmModelInstance<T, TModel>> => {
       if (datastoreProvider.createAndSave) {
         const response = await datastoreProvider.createAndSave(data)
-        return _retrievedObjToModel(model)(response)
+        return _retrievedObjToModel<T, TModel>(model)(response)
       }
       const instance = model.create(
-        (await data.toObj()) as ModelInstanceInputData<T>
-      ) as OrmModelInstance<T>
+        (await data.toObj()) as ModelInstanceInputData<T, any>
+      ) as unknown as OrmModelInstance<T, TModel>
       return instance.save()
     }
 
-    const deleteObj = (instance: OrmModelInstance<T>) => {
+    const deleteObj = (instance: OrmModelInstance<T, TModel>) => {
       return Promise.resolve().then(async () => {
         await datastoreProvider.delete(instance)
       })
     }
 
-    const _getSave = (instance: OrmModelInstance<T>) => {
+    const _getSave = (instance: OrmModelInstance<T, TModel>) => {
       const thisModelOptions = instance.getModel().getOptions()
       // See if save has been overrided.
       if (thisModelOptions.save) {
-        return () => (thisModelOptions.save as SaveOverride<T>)(save, instance)
+        return () => (thisModelOptions.save as SaveOverride<T, TModel>)(save, instance)
       }
       return () => save(instance)
     }
 
-    const _getDelete = (instance: OrmModelInstance<T>) => {
+    const _getDelete = (instance: OrmModelInstance<T, TModel>) => {
       const thisModelOptions = instance.getModel().getOptions()
       if (thisModelOptions.delete) {
         return () =>
-          (thisModelOptions.delete as DeleteOverride<T>)(deleteObj, instance)
+          (thisModelOptions.delete as DeleteOverride<T, TModel>)(deleteObj, instance)
       }
       return () => deleteObj(instance)
     }
 
-    const instanceCreatedCallback = (instance: ModelInstance<T>) => {
-      const ormInstance = instance as OrmModelInstance<T>
+    const instanceCreatedCallback = (instance: ModelInstance<T, TModel>) => {
+      const ormInstance = instance as OrmModelInstance<T, TModel>
       // eslint-disable-next-line functional/immutable-data
       ormInstance.save = _getSave(ormInstance)
       // eslint-disable-next-line functional/immutable-data
       ormInstance.delete = _getDelete(ormInstance)
       if (theOptions.instanceCreatedCallback) {
-        const callbacks: readonly ((instance: ModelInstance<T>) => void)[] =
+        const callbacks: readonly ((instance: ModelInstance<T, TModel>) => void)[] =
           Array.isArray(theOptions.instanceCreatedCallback)
             ? theOptions.instanceCreatedCallback
             : [theOptions.instanceCreatedCallback]
@@ -219,7 +221,7 @@ const orm = ({
     const overridedOptions = merge({}, theOptions, {
       instanceCreatedCallback: [instanceCreatedCallback],
     })
-    const baseModel = BaseModel<T>(
+    const baseModel = BaseModel<T, TModel>(
       modelName,
       newKeyToProperty,
       overridedOptions
@@ -227,22 +229,22 @@ const orm = ({
     const lowerLevelCreate = baseModel.create
 
     const _convertModelInstance = (
-      instance: ModelInstance<T>
-    ): OrmModelInstance<T> => {
-      return merge(instance, {
+      instance: OrmModelInstance<T, TModel>
+    ): OrmModelInstance<T, TModel> => {
+      return merge(instance as OrmModelInstance<T, TModel>, {
         methods: {
           isDirty: isDirtyTrue,
         },
         create,
-        getModel: () => model as OrmModel<T>,
-        save: _getSave(instance as OrmModelInstance<T>),
-        delete: _getDelete(instance as OrmModelInstance<T>),
+        getModel: () => model as TModel,
+        save: _getSave(instance as OrmModelInstance<T, TModel>),
+        delete: _getDelete(instance as OrmModelInstance<T, TModel>),
       })
     }
 
-    const create = (data: CreateParams<T>): OrmModelInstance<T> => {
+    const create = (data: CreateParams<T, any>): OrmModelInstance<T, TModel> => {
       const result = lowerLevelCreate(data)
-      return _convertModelInstance(result)
+      return _convertModelInstance(result as unknown as OrmModelInstance<T, TModel>)
     }
 
     model = merge(baseModel, {
