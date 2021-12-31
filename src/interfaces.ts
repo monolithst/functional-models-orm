@@ -13,6 +13,8 @@ import {
   PropertyConfig,
   CreateParams,
   ValidatorConfiguration,
+  ModelMethod,
+  ModelInstanceMethod,
 } from 'functional-models/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from './constants'
 
@@ -144,6 +146,9 @@ type OrmModelInstance<
     readonly isDirty: () => boolean
   }
 } & ModelInstance<T, TModel>
+
+type OrmModelMethod<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>> = ModelMethod<T, TModel>
+type OrmModelInstanceMethod<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>, TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<T, TModel>> = ModelInstanceMethod<T, TModel, TModelInstance>
 
 type DatastoreProvider = {
   readonly save: <
@@ -316,4 +321,6 @@ export {
   OrmPropertyConfig,
   DatastoreSearchResult,
   OrmValidatorConfiguration,
+  OrmModelMethod,
+  OrmModelInstanceMethod,
 }
