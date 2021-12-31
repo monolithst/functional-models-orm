@@ -2,6 +2,7 @@ import { assert } from 'chai'
 import sinon from 'sinon'
 import { ormPropertyConfig } from '../../src/properties'
 import { unique } from '../../src/validation'
+import { PropertyValidatorComponent } from 'functional-models/interfaces'
 
 describe('/src/properties.ts', () => {
   describe('#ormPropertyConfig()', () => {
@@ -24,7 +25,10 @@ describe('/src/properties.ts', () => {
       assert.equal(actual, expected)
     })
     it('should return two validators when unique:key and another validator is added', () => {
-      const input = { unique: 'key', validators: [unique('somethingelse')] }
+      const validators: readonly PropertyValidatorComponent<any, any, any>[] = [
+        unique('somethingelse'),
+      ]
+      const input = { unique: 'key', validators }
       const actual = ormPropertyConfig<string>(input).validators.length
       const expected = 2
       assert.equal(actual, expected)

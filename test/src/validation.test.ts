@@ -1,6 +1,6 @@
 import sinon from 'sinon'
 import { assert } from 'chai'
-import { TextProperty } from 'functional-models'
+import { TextProperty, UniqueId } from 'functional-models'
 import orm from '../../src/orm'
 import { ValueOptional } from 'functional-models/interfaces'
 import memoryDatastoreProvider from '../../src/datastore/memory'
@@ -15,7 +15,7 @@ import {
   PropertyStatement,
 } from '../../src/interfaces'
 
-type TestType1 = { id: string; name: string; description: string }
+type TestType1 = { name?: string; description?: string }
 
 const setupMocks = () => {
   const datastoreProvider = {
@@ -34,7 +34,7 @@ const setupMocks = () => {
 const createTestModel1 = (BaseModel: OrmModelFactory) =>
   BaseModel<TestType1>('TestModel1', {
     properties: {
-      id: TextProperty({ defaultValue: 'test-id' }),
+      id: UniqueId({ defaultValue: 'test-id' }),
       name: TextProperty<ValueOptional<string>>(),
       description: TextProperty<ValueOptional<string>>(),
     },

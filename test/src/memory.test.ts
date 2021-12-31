@@ -1,5 +1,5 @@
 import { assert } from 'chai'
-import { TextProperty } from 'functional-models'
+import { TextProperty, NumberProperty } from 'functional-models'
 import datastore from '../../src/datastore/memory'
 import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
 import orm from '../../src/orm'
@@ -7,11 +7,20 @@ import { DatastoreProvider, OrmModelFactory } from '../../src/interfaces'
 import { ValueOptional } from 'functional-models/interfaces'
 
 type TestModelType = { name: string }
+type TestModelType2 = { value: number }
 const TEST_MODEL1_NAME = 'TestModel1'
+const TEST_MODEL2_NAME = 'TestModel2'
 const createTestModel1 = (BaseModel: OrmModelFactory) =>
   BaseModel<TestModelType>(TEST_MODEL1_NAME, {
     properties: {
       name: TextProperty<ValueOptional<string>>(),
+    },
+  })
+
+const createTestModel2 = (BaseModel: OrmModelFactory) =>
+  BaseModel<TestModelType2>(TEST_MODEL2_NAME, {
+    properties: {
+      value: NumberProperty(),
     },
   })
 
@@ -244,16 +253,16 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should find 2 instances when when greater than 2', async () => {
         const datastoreProvider = datastore({
-          [TEST_MODEL1_NAME]: [
+          [TEST_MODEL2_NAME]: [
             { id: '123', value: 2 },
             { id: '234', value: 3 },
             { id: '345', value: 4 },
           ],
         })
         const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
+          await datastoreProvider.search(model, {
             properties: {
               name: {
                 type: 'property',
@@ -276,16 +285,16 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should find 3 instances when when GTE 2', async () => {
         const datastoreProvider = datastore({
-          [TEST_MODEL1_NAME]: [
+          [TEST_MODEL2_NAME]: [
             { id: '123', value: 2 },
             { id: '234', value: 3 },
             { id: '345', value: 4 },
           ],
         })
         const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
+          await datastoreProvider.search(model, {
             properties: {
               name: {
                 type: 'property',
@@ -309,7 +318,7 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should find 1 instances when when less than 2', async () => {
         const datastoreProvider = datastore({
-          [TEST_MODEL1_NAME]: [
+          [TEST_MODEL2_NAME]: [
             { id: '012', value: 1 },
             { id: '123', value: 2 },
             { id: '234', value: 3 },
@@ -317,9 +326,9 @@ describe('/src/datastore/memory.js', () => {
           ],
         })
         const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
+          await datastoreProvider.search(model, {
             properties: {
               name: {
                 type: 'property',
@@ -339,7 +348,7 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should find 2 instances when when LTE 2', async () => {
         const datastoreProvider = datastore({
-          [TEST_MODEL1_NAME]: [
+          [TEST_MODEL2_NAME]: [
             { id: '012', value: 1 },
             { id: '123', value: 2 },
             { id: '234', value: 3 },
@@ -347,9 +356,9 @@ describe('/src/datastore/memory.js', () => {
           ],
         })
         const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
+          await datastoreProvider.search(model, {
             properties: {
               name: {
                 type: 'property',
@@ -372,7 +381,7 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should find 1 instances when when = 2', async () => {
         const datastoreProvider = datastore({
-          [TEST_MODEL1_NAME]: [
+          [TEST_MODEL2_NAME]: [
             { id: '012', value: 1 },
             { id: '123', value: 2 },
             { id: '234', value: 3 },
@@ -380,9 +389,9 @@ describe('/src/datastore/memory.js', () => {
           ],
         })
         const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
+          await datastoreProvider.search(model, {
             properties: {
               name: {
                 type: 'property',
@@ -427,7 +436,7 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(store)
         const TEST_MODEL1 = createTestModel1(BaseModel)
         const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
-        await store.save(myModel)
+        await store.save<TestModelType>(myModel)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
@@ -437,12 +446,12 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(store)
         const TEST_MODEL1 = createTestModel1(BaseModel)
         const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
-        await store.save(myModel)
+        await store.save<TestModelType>(myModel)
         const myModel2 = TEST_MODEL1.create({
           id: 'my-id-2',
           name: 'my-name-2',
         })
-        await store.save(myModel2)
+        await store.save<TestModelType>(myModel2)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
@@ -457,7 +466,7 @@ describe('/src/datastore/memory.js', () => {
         const myModelInstance = TEST_MODEL1.create(myModel)
         const first = await store.retrieve(TEST_MODEL1, 'my-id')
         assert.isOk(first)
-        await store.delete(myModelInstance)
+        await store.delete<TestModelType>(myModelInstance)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
         assert.isUndefined(actual)
       })

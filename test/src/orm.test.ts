@@ -63,13 +63,11 @@ describe('/src/orm.ts', () => {
             properties: { name: TextProperty() },
           })
           const modelInstance = model.create({ name: 'hello world' })
-          const create = sinon
-            .stub()
-            .returns({
-              save,
-              toObj: () =>
-                Promise.resolve({ id: 'test-me', name: 'hello world' }),
-            })
+          const create = sinon.stub().returns({
+            save,
+            toObj: () =>
+              Promise.resolve({ id: 'test-me', name: 'hello world' }),
+          })
           // @ts-ignore
           model.create = create
           const result = await model.createAndSave(modelInstance)
@@ -157,7 +155,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{name: string}>(
+            const model = instance.BaseModel<{ name: string }>(
               'MyModel',
               {
                 properties: {
@@ -223,7 +221,7 @@ describe('/src/orm.ts', () => {
           it('should throw an exception if the model has validation errors and save is called', () => {
             const datastoreProvider = createDatastore()
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{name: string}>(
+            const model = instance.BaseModel<{ name: string }>(
               'MyModel',
               {
                 properties: {
@@ -232,6 +230,7 @@ describe('/src/orm.ts', () => {
               },
               {}
             )
+            // @ts-ignore
             const modelInstance = model.create({})
             return modelInstance
               .save()
@@ -246,7 +245,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{name: string}>(
+            const model = instance.BaseModel<{ name: string }>(
               'MyModel',
               {
                 properties: {
@@ -269,7 +268,7 @@ describe('/src/orm.ts', () => {
             }
             // @ts-ignore
             const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{name: string}>(
+            const model = instance.BaseModel<{ name: string }>(
               'MyModel',
               {
                 properties: {
@@ -350,10 +349,10 @@ describe('/src/orm.ts', () => {
           {}
         )
 
+        // @ts-ignore
         const actual = await (
-          (await instance.fetcher(model, 'my-id')) as OrmModelInstance<{
-            name: string
-          }>
+          await instance.fetcher<{ name: string }>(model, 'my-id')
+          // @ts-ignore
         ).toObj()
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)

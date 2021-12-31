@@ -21,7 +21,10 @@ import {
   DatastoreSearchResult,
 } from '../interfaces'
 
-const _getDbEntryInfo = async <T extends FunctionalModel, TModel extends OrmModel<T>>(
+const _getDbEntryInfo = async <
+  T extends FunctionalModel,
+  TModel extends OrmModel<T>
+>(
   instance: OrmModelInstance<T, TModel>
 ) => {
   const modelName: string = instance.getModel().getName()
@@ -70,7 +73,7 @@ const memoryDatastoreProvider = (
 
   const save = <T extends FunctionalModel, TModel extends OrmModel<T>>(
     instance: OrmModelInstance<T, TModel>
-  ): Promise<ModelInstanceInputData<T, any>> => {
+  ): Promise<ModelInstanceInputData<T>> => {
     return (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
@@ -83,7 +86,7 @@ const memoryDatastoreProvider = (
           // @ts-ignore
           // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
-          return obj as ModelInstanceInputData<T, any>
+          return obj as ModelInstanceInputData<T>
         })
     )
   }
@@ -172,10 +175,11 @@ const memoryDatastoreProvider = (
       type ValidationFunc = (obj: SimpleObj) => boolean
       const models = db[modelName] as {
         // eslint-disable-next-line functional/prefer-readonly-type
-        [s: PrimaryKeyType]: readonly ModelInstanceInputData<T, any>[]
+        [s: PrimaryKeyType]: readonly ModelInstanceInputData<T>[]
       }
       const beforeFilters = Object.entries(
-        ormQuery.datesBefore || ({} as { readonly [s: string]: DatesBeforeStatement })
+        ormQuery.datesBefore ||
+          ({} as { readonly [s: string]: DatesBeforeStatement })
       ).reduce((acc, [key, partial]) => {
         const func = (theirObj: SimpleObj) => {
           // @ts-ignore
@@ -231,7 +235,7 @@ const memoryDatastoreProvider = (
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
         : results
-      const sorted: readonly ModelInstanceInputData<T, any>[] = ormQuery.sort
+      const sorted: readonly ModelInstanceInputData<T>[] = ormQuery.sort
         ? orderBy(
             instances,
             [ormQuery.sort.key],

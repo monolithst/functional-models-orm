@@ -1,15 +1,18 @@
 import flow from 'lodash/flow'
 import {
-  ModelValidatorComponent,
   PropertyValidatorComponentAsync,
   FunctionalModel,
   PrimaryKeyType,
   ModelError,
   JsonAble,
-  ModelInstance,
 } from 'functional-models/interfaces'
 import { ormQueryBuilder } from './ormQuery'
-import { OrmQuery, OrmValidatorConfiguration } from './interfaces'
+import {
+  OrmQuery,
+  OrmValidatorConfiguration,
+  OrmModelInstance,
+  OrmModel,
+} from './interfaces'
 
 const _doUniqueCheck = async (
   query: OrmQuery,
@@ -42,11 +45,18 @@ const _doUniqueCheck = async (
   return buildErrorMessage()
 }
 
-const uniqueTogether = <T extends FunctionalModel>(
+const uniqueTogether = <
+  T extends FunctionalModel,
+  TModel extends OrmModel<T> = OrmModel<T>,
+  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
+    T,
+    TModel
+  >
+>(
   propertyKeyArray: readonly string[]
 ) => {
   const _uniqueTogether = async (
-    instance: ModelInstance<T>,
+    instance: TModelInstance,
     instanceData: T | JsonAble,
     options: OrmValidatorConfiguration = buildOrmValidationOptions({})
   ) => {
@@ -77,16 +87,27 @@ const uniqueTogether = <T extends FunctionalModel>(
   return _uniqueTogether
 }
 
-const unique = <T extends FunctionalModel>(
+const unique = <
+  T extends FunctionalModel,
+  TModel extends OrmModel<T> = OrmModel<T>,
+  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
+    T,
+    TModel
+  >
+>(
   propertyKey: string
-): PropertyValidatorComponentAsync<T> => {
-  const _unique: PropertyValidatorComponentAsync<T> = (
+): PropertyValidatorComponentAsync<T, TModel, TModelInstance> => {
+  const _unique: PropertyValidatorComponentAsync<T, TModel, TModelInstance> = (
     value,
     instance,
     instanceData,
     options
   ) => {
-    return uniqueTogether<T>([propertyKey])(instance, instanceData, options)
+    return uniqueTogether<T, TModel, TModelInstance>([propertyKey])(
+      instance,
+      instanceData,
+      options
+    )
   }
   //const _unique = async (value: string, instance: any, instanceData: any, options: {noOrmValidation: boolean}) => {
   //}
