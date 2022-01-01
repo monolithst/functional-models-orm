@@ -15,8 +15,11 @@ import {
   ValidatorConfiguration,
   ModelMethod,
   ModelInstanceMethod,
+  ModelMethodGetters,
+  ModelReference,
 } from 'functional-models/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from './constants'
+import { AdvancedModelReferenceProperty } from 'functional-models'
 
 type SaveMethod<
   T extends FunctionalModel,
@@ -132,6 +135,7 @@ type OrmModel<T extends FunctionalModel> = {
   ) => Promise<void>
   readonly create: (data: CreateParams<T>) => OrmModelInstance<T>
   readonly getModelDefinition: () => ModelDefinition<T, OrmModel<T>>
+  readonly methods: ModelMethodGetters<T, OrmModel<T>>
 } & Model<T>
 
 type OrmModelInstance<
@@ -147,8 +151,23 @@ type OrmModelInstance<
   }
 } & ModelInstance<T, TModel>
 
-type OrmModelMethod<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>> = ModelMethod<T, TModel>
-type OrmModelInstanceMethod<T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>, TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<T, TModel>> = ModelInstanceMethod<T, TModel, TModelInstance>
+type OrmModelMethod<
+  T extends FunctionalModel,
+  TModel extends OrmModel<T> = OrmModel<T>
+> = ModelMethod<T, TModel>
+type OrmModelInstanceMethod<
+  T extends FunctionalModel,
+  TModel extends OrmModel<T> = OrmModel<T>,
+  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
+    T,
+    TModel
+  >
+> = ModelInstanceMethod<T, TModel, TModelInstance>
+type OrmModelReference<T extends FunctionalModel> = ModelReference<
+  T,
+  OrmModel<T>,
+  OrmModelInstance<T, OrmModel<T>>
+>
 
 type DatastoreProvider = {
   readonly save: <
@@ -323,4 +342,5 @@ export {
   OrmValidatorConfiguration,
   OrmModelMethod,
   OrmModelInstanceMethod,
+  OrmModelReference,
 }

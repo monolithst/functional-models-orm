@@ -1,10 +1,22 @@
 import { assert } from 'chai'
-import sinon from 'sinon'
-import { ormPropertyConfig } from '../../src/properties'
+import {
+  ormPropertyConfig,
+  OrmModelReferenceProperty,
+} from '../../src/properties'
 import { unique } from '../../src/validation'
 import { PropertyValidatorComponent } from 'functional-models/interfaces'
+import { OrmModel } from '../../src/interfaces'
 
 describe('/src/properties.ts', () => {
+  describe('#OrmModelReferenceProperty()', () => {
+    it('should be easy to use without having to put in alot of types', () => {
+      type MyType = { value: string }
+      const model: OrmModel<MyType> = {} as unknown as OrmModel<MyType>
+      assert.doesNotThrow(() => {
+        OrmModelReferenceProperty<MyType>(model)
+      })
+    })
+  })
   describe('#ormPropertyConfig()', () => {
     it('should return one validator when unique:key is set', () => {
       const input = { unique: 'key' }
