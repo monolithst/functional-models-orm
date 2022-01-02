@@ -334,7 +334,13 @@ type OrmQueryBuilder = {
     endsWith,
     type,
     equalitySymbol
-  }?: { readonly caseSensitive?: any; readonly startsWith?: any; readonly endsWith?: any; readonly type?: any; readonly equalitySymbol?: any }) => OrmQueryBuilder,
+  }?: {
+    readonly caseSensitive?: boolean,
+    readonly startsWith?: boolean,
+    readonly endsWith?: boolean,
+    readonly type?: ORMType,
+    readonly equalitySymbol?: EQUALITY_SYMBOLS,
+  }) => OrmQueryBuilder,
   readonly pagination: (value: any) => OrmQueryBuilder,
   readonly sort: (key: string, isAscending?: boolean) => OrmQueryBuilder,
   readonly take: (count: number) => OrmQueryBuilder,
