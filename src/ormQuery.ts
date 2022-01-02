@@ -10,6 +10,7 @@ import {
   PropertyStatement,
   AndStatement,
   OrStatement,
+  OrmQueryBuilder,
 } from './interfaces'
 import {
   EQUALITY_SYMBOLS,
@@ -45,6 +46,7 @@ const compile = (queryData: readonly OrmQueryStatement[]) => (): OrmQuery => {
     return merge(acc, { [partial.type]: partial.value })
   }, startingQuery)
 }
+
 
 const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
   const datesAfter = (
@@ -160,11 +162,11 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
     return _addStatementAndReturn(statement)
   }
 
-  const _addStatementAndReturn = (statement: OrmQueryStatement) => {
+  const _addStatementAndReturn = (statement: OrmQueryStatement) : OrmQueryBuilder => {
     return ormQueryBuilder([...queryData, statement])
   }
 
-  return {
+  const builder: OrmQueryBuilder = {
     compile: compile(queryData),
     datesAfter,
     datesBefore,
@@ -175,6 +177,7 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
     and,
     or,
   }
+  return builder
 }
 
 export { ormQueryBuilder }

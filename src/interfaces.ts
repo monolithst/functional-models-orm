@@ -318,6 +318,31 @@ type OrmValidatorConfiguration = {
   readonly noOrmValidation?: boolean
 } & ValidatorConfiguration
 
+type OrmQueryBuilder = {
+  readonly compile: () => OrmQuery,
+  readonly datesAfter: (key: string, jsDate: (Date | string), {
+    valueType,
+    equalToAndAfter
+  }: { readonly valueType?: ORMType; readonly equalToAndAfter?: boolean }) => OrmQueryBuilder,
+  readonly datesBefore: (key: string, jsDate: (Date | string), {
+    valueType,
+    equalToAndBefore
+  }: { readonly valueType?: ORMType; readonly equalToAndBefore?: boolean }) => OrmQueryBuilder,
+  readonly property: (name: string, value: any, {
+    caseSensitive,
+    startsWith,
+    endsWith,
+    type,
+    equalitySymbol
+  }?: { readonly caseSensitive?: any; readonly startsWith?: any; readonly endsWith?: any; readonly type?: any; readonly equalitySymbol?: any }) => OrmQueryBuilder,
+  readonly pagination: (value: any) => OrmQueryBuilder,
+  readonly sort: (key: string, isAscending?: boolean) => OrmQueryBuilder,
+  readonly take: (count: number) => OrmQueryBuilder,
+  readonly and: () => OrmQueryBuilder,
+  readonly or: () => OrmQueryBuilder,
+}
+
+
 export {
   OrmQuery,
   OrmQueryStatement,
@@ -343,4 +368,5 @@ export {
   OrmModelMethod,
   OrmModelInstanceMethod,
   OrmModelReference,
+  OrmQueryBuilder,
 }

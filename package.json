@@ -1,6 +1,6 @@
 {
   "name": "functional-models-orm",
-  "version": "2.0.8",
+  "version": "2.0.9",
   "description": "A basic ORM building library using the functional-models library.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -9,7 +9,8 @@
     "test:coverage": "nyc npm run test",
     "feature-tests": "./node_modules/.bin/cucumber-js -p default",
     "coverage": "nyc --all --reporter=lcov npm test",
-    "dist": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist && cd dist && npm publish"
+    "build": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist",
+    "dist": "npm run build && cd dist && npm publish"
   },
   "repository": {
     "type": "git",
