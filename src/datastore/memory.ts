@@ -8,7 +8,7 @@ import isAfter from 'date-fns/isAfter'
 import isEqual from 'date-fns/isEqual'
 import {
   FunctionalModel,
-  JsonAble,
+  JsonAble, Model, ModelInstance,
   ModelInstanceInputData,
   PrimaryKeyType,
 } from 'functional-models/interfaces'
@@ -23,9 +23,9 @@ import {
 
 const _getDbEntryInfo = async <
   T extends FunctionalModel,
-  TModel extends OrmModel<T>
+  TModel extends Model<T>
 >(
-  instance: OrmModelInstance<T, TModel>
+  instance: ModelInstance<T, TModel>
 ) => {
   const modelName: string = instance.getModel().getName()
   const obj = await instance.toObj()
@@ -71,8 +71,8 @@ const memoryDatastoreProvider = (
     {}
   )
 
-  const save = <T extends FunctionalModel, TModel extends OrmModel<T>>(
-    instance: OrmModelInstance<T, TModel>
+  const save = <T extends FunctionalModel, TModel extends Model<T>>(
+    instance: ModelInstance<T, TModel>
   ): Promise<ModelInstanceInputData<T>> => {
     return (
       Promise.resolve()
@@ -91,8 +91,8 @@ const memoryDatastoreProvider = (
     )
   }
 
-  const deleteObj = <T extends FunctionalModel, TModel extends OrmModel<T>>(
-    instance: OrmModelInstance<T, TModel>
+  const deleteObj = <T extends FunctionalModel, TModel extends Model<T>>(
+    instance: ModelInstance<T, TModel>
   ) => {
     return (
       Promise.resolve()
@@ -110,7 +110,7 @@ const memoryDatastoreProvider = (
   }
 
   const retrieve = <T extends FunctionalModel>(
-    model: OrmModel<T>,
+    model: Model<T>,
     primaryKey: PrimaryKeyType
   ) => {
     return Promise.resolve().then(() => {
@@ -136,7 +136,7 @@ const memoryDatastoreProvider = (
     '<': (name, value) => obj => obj[name] < value,
   }
 
-  const search = <T extends FunctionalModel, TModel extends OrmModel<T>>(
+  const search = <T extends FunctionalModel, TModel extends Model<T>>(
     model: TModel,
     ormQuery: OrmQuery
   ): Promise<DatastoreSearchResult<T>> => {

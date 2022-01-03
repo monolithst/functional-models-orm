@@ -16,10 +16,9 @@ import {
   ModelMethod,
   ModelInstanceMethod,
   ModelMethodGetters,
-  ModelReference,
+  ModelReference, InstanceMethodGetters,
 } from 'functional-models/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from './constants'
-import { AdvancedModelReferenceProperty } from 'functional-models'
 
 type SaveMethod<
   T extends FunctionalModel,
@@ -127,6 +126,7 @@ type OrmModel<T extends FunctionalModel> = {
     primaryKey: PrimaryKeyType
   ) => Promise<Maybe<OrmModelInstance<T>>>
   readonly search: (query: OrmQuery) => Promise<OrmSearchResult<T, OrmModel<T>>>
+  readonly searchOne: (query: OrmQuery) => Promise<OrmModelInstance<T>|undefined>,
   readonly createAndSave: (
     data: OrmModelInstance<T>
   ) => Promise<OrmModelInstance<T>>
@@ -135,7 +135,7 @@ type OrmModel<T extends FunctionalModel> = {
   ) => Promise<void>
   readonly create: (data: CreateParams<T>) => OrmModelInstance<T>
   readonly getModelDefinition: () => ModelDefinition<T, OrmModel<T>>
-  readonly methods: ModelMethodGetters<T, OrmModel<T>>
+  readonly methods: ModelMethodGetters<T, OrmModel<T>> & ModelMethodGetters<T>
 } & Model<T>
 
 type OrmModelInstance<
@@ -148,13 +148,14 @@ type OrmModelInstance<
   delete: () => Promise<void>
   readonly methods: {
     readonly isDirty: () => boolean
-  }
-} & ModelInstance<T, TModel>
+  } & InstanceMethodGetters<T, TModel, OrmModelInstance<T, TModel>> & InstanceMethodGetters<T>
+} & ModelInstance<T, TModel> & ModelInstance<T>
 
 type OrmModelMethod<
   T extends FunctionalModel,
   TModel extends OrmModel<T> = OrmModel<T>
 > = ModelMethod<T, TModel>
+
 type OrmModelInstanceMethod<
   T extends FunctionalModel,
   TModel extends OrmModel<T> = OrmModel<T>,
@@ -163,6 +164,7 @@ type OrmModelInstanceMethod<
     TModel
   >
 > = ModelInstanceMethod<T, TModel, TModelInstance>
+
 type OrmModelReference<T extends FunctionalModel> = ModelReference<
   T,
   OrmModel<T>,
@@ -172,8 +174,8 @@ type OrmModelReference<T extends FunctionalModel> = ModelReference<
 type DatastoreProvider = {
   readonly save: <
     T extends FunctionalModel,
-    TModel extends OrmModel<T> = OrmModel<T>,
-    TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
+    TModel extends Model<T> = OrmModel<T>,
+    TModelInstance extends ModelInstance<T, TModel> = ModelInstance<
       T,
       TModel
     >
@@ -182,8 +184,8 @@ type DatastoreProvider = {
   ) => Promise<ModelInstanceInputData<T>>
   readonly delete: <
     T extends FunctionalModel,
-    TModel extends OrmModel<T> = OrmModel<T>,
-    TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
+    TModel extends Model<T> = OrmModel<T>,
+    TModelInstance extends ModelInstance<T, TModel> = ModelInstance<
       T,
       TModel
     >

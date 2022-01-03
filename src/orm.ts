@@ -21,7 +21,7 @@ import {
   OrmOptionalModelOptions,
   SaveOverride,
   DeleteOverride,
-  OrmModelOptions,
+  OrmModelOptions, TakeStatement,
 } from './interfaces'
 
 const { ValidationError } = errors
@@ -149,6 +149,14 @@ const orm = ({
           page: result.page,
         }
       })
+    }
+
+    const searchOne = (ormQuery: OrmQuery) => {
+      ormQuery = merge(ormQuery, { take: 1 })
+      return search(ormQuery)
+        .then(({instances}) => {
+          return instances[0]
+        })
     }
 
     const bulkInsert = async (instances: readonly TModelInstance[]) => {
@@ -307,6 +315,7 @@ const orm = ({
       delete: deleteObj,
       retrieve: loadedRetrieve,
       search,
+      searchOne,
       createAndSave,
       bulkInsert,
     })

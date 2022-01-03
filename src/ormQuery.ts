@@ -180,4 +180,6 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
   return builder
 }
 
-export { ormQueryBuilder }
+export {
+  ormQueryBuilder
+}
