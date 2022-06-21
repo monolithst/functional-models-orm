@@ -55,16 +55,16 @@ type SimpleObj = {
 
 const memoryDatastoreProvider = (
   seedModelsByModelName: SeedModels = {},
-  { primaryKey = 'id' } = {}
+  { getSeedPrimaryKeyName = () => 'id' } = {}
 ): DatastoreProvider => {
-  if (!primaryKey) {
-    throw new Error(`Configuration must include primary key.`)
+  if (!getSeedPrimaryKeyName) {
+    throw new Error(`Configuration must include getSeedPrimaryKey.`)
   }
   const db: ModelsDb = Object.entries(seedModelsByModelName).reduce(
     (acc, [modelName, models]) => {
       const data = models.reduce((inner, model) => {
         // @ts-ignore
-        return { ...(inner as object), [model[primaryKey]]: model }
+        return { ...(inner as object), [model[getSeedPrimaryKeyName(model)]]: model }
       }, {})
       return merge({}, acc, { [modelName]: data })
     },
@@ -83,6 +83,7 @@ const memoryDatastoreProvider = (
             // eslint-disable-next-line functional/immutable-data
             db[modelName] = {}
           }
+          const primaryKey = instance.getModel().getPrimaryKeyName()
           // @ts-ignore
           // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
@@ -101,6 +102,7 @@ const memoryDatastoreProvider = (
           const [modelName, obj] = await _getDbEntryInfo(instance)
           // eslint-disable-next-line no-undef,functional/immutable-data
           if (obj) {
+            const primaryKey = instance.getModel().getPrimaryKeyName()
             // @ts-ignore
             // eslint-disable-next-line functional/immutable-data
             delete db[modelName][obj[primaryKey]]

@@ -8,8 +8,10 @@ import { ValueOptional } from 'functional-models/interfaces'
 
 type TestModelType = { name: string }
 type TestModelType2 = { value: number }
+type TestModelType3 = { anotherPKey: string, value: number }
 const TEST_MODEL1_NAME = 'TestModel1'
 const TEST_MODEL2_NAME = 'TestModel2'
+const TEST_MODEL3_NAME = 'TestModel3'
 const createTestModel1 = (BaseModel: OrmModelFactory) =>
   BaseModel<TestModelType>(TEST_MODEL1_NAME, {
     properties: {
@@ -24,6 +26,15 @@ const createTestModel2 = (BaseModel: OrmModelFactory) =>
     },
   })
 
+const createTestModel3 = (BaseModel: OrmModelFactory) =>
+  BaseModel<TestModelType3>(TEST_MODEL3_NAME, {
+    properties: {
+      anotherPKey: TextProperty(),
+      value: NumberProperty(),
+    },
+    getPrimaryKeyName: () => 'anotherPKey'
+  })
+
 const setupMocks = (datastoreProvider: DatastoreProvider) => {
   const ormInstance = orm({ datastoreProvider })
   return {
@@ -34,10 +45,10 @@ const setupMocks = (datastoreProvider: DatastoreProvider) => {
 
 describe('/src/datastore/memory.js', () => {
   describe('#()', () => {
-    it('should throw an exception when primaryKey is set to null', () => {
+    it('should throw an exception when getSeedPrimaryKeyName is set to null', () => {
       assert.throws(() => {
         // @ts-ignore
-        datastore({}, { primaryKey: null })
+        datastore({}, { getSeedPrimaryKeyName: null })
       })
     })
     it('should not cause an exception with no arguments', () => {
@@ -431,6 +442,16 @@ describe('/src/datastore/memory.js', () => {
       })
     })
     describe('#save()', () => {
+      it('should use the getPrimaryKey() from the model when saving', async () => {
+        const store = datastore()
+        const { BaseModel } = setupMocks(store)
+        const TEST_MODEL3 = createTestModel3(BaseModel)
+        const myModel = TEST_MODEL3.create({ anotherPKey: 'my-id', value: 'my-name' })
+        await store.save<TestModelType3>(myModel)
+        const actual = await store.retrieve(TEST_MODEL3, 'my-id')
+        const expected = { anotherPKey: 'my-id', value: 'my-name' }
+        assert.deepEqual(actual, expected)
+      })
       it('should put an object in there that can be retrieved later', async () => {
         const store = datastore()
         const { BaseModel } = setupMocks(store)
