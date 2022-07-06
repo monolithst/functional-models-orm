@@ -68,8 +68,12 @@ const uniqueTogether = <
       return [key, instanceData[key]]
     })
     const query = flow(
-      properties.map(([key, value]) => {
+      properties.map(([key, value], index) => {
         return b => {
+          // We only want to do an 'and' if there is another property.
+          if (index + 1 >= properties.length) {
+            return b.property(key, value, { caseSensitive: false })
+          }
           return b.property(key, value, { caseSensitive: false }).and()
         }
       })
