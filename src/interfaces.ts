@@ -377,4 +377,5 @@ export {
   OrmModelInstanceMethod,
   OrmModelReference,
   OrmQueryBuilder,
+  OrmSearchResult,
 }
