@@ -5,6 +5,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
+    "watch": "tsc -w --noEmit",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage": "nyc npm run test",
     "feature-tests": "./node_modules/.bin/cucumber-js -p default",
