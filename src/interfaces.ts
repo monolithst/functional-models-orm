@@ -136,6 +136,7 @@ type OrmModel<T extends FunctionalModel> = {
   readonly create: (data: CreateParams<T>) => OrmModelInstance<T>
   readonly getModelDefinition: () => ModelDefinition<T, OrmModel<T>>
   readonly methods: ModelMethodGetters<T, OrmModel<T>> & ModelMethodGetters<T>
+  readonly count: () => Promise<number>
 } & Model<T>
 
 type OrmModelInstance<
@@ -221,6 +222,12 @@ type DatastoreProvider = {
   >(
     instance: TModelInstance
   ) => Promise<ModelInstanceInputData<T>>
+  readonly count?: <
+    T extends FunctionalModel,
+    TModel extends OrmModel<T> = OrmModel<T>
+  >(
+    model: TModel
+  ) => Promise<number>
 }
 
 type PropertyStatement = {
