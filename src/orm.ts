@@ -23,6 +23,7 @@ import {
   DeleteOverride,
   OrmModelOptions, TakeStatement,
 } from './interfaces'
+import { ormQueryBuilder } from './ormQuery'
 
 const { ValidationError } = errors
 const isDirtyFalse = () => false
@@ -308,6 +309,29 @@ const orm = ({
       return _convertModelInstance(result as unknown as TModelInstance)
     }
 
+    const _countRecursive = async (page=null) : Promise<number> => {
+      const results = await model.search(ormQueryBuilder()
+        .pagination(page)
+        .compile()
+      )
+      const length1 = results.instances.length
+      // Don't run it again if the page is the same as a previous run.
+      if (results.page && results.page !== page) {
+        const length2 = await _countRecursive(results.page)
+        return length1 + length2
+      }
+      return length1
+    }
+    
+    const count = async () : Promise<number> => {
+      // NOTE: This is EXTREMELY inefficient. This should be
+      // overrided by a dataProvider if at all possible.
+      if (datastoreProvider.count) {
+        return datastoreProvider.count<T, TModel>(model)
+      }
+      return _countRecursive()
+    }
+
     model = merge(baseModel, {
       getOptions: () => theOptions,
       create,
@@ -318,6 +342,7 @@ const orm = ({
       searchOne,
       createAndSave,
       bulkInsert,
+      count,
     })
     return model
   }

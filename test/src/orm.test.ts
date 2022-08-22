@@ -315,6 +315,25 @@ describe('/src/orm.ts', () => {
           assert.deepEqual(actual, expected)
         })
       })
+      describe('#searchOne()', () => {
+        it('should return one object even though two are matched', async () => {
+          const datastoreProvider = createDatastore()
+          // @ts-ignore
+          const instance = orm({ datastoreProvider, BaseModel })
+          const model = instance.BaseModel<{name: string}>('MyModel', { properties: {
+            name: TextProperty()
+          } }, {})
+          await model.create({ name: 'Name' }).save()
+          await model.create({ name: 'Name' }).save()
+          const ormQuery = ormQueryBuilder()
+            .property('name', 'Name')
+            .compile()
+          // @ts-ignore
+          const actual = (await model.searchOne(ormQuery).then(x=>x.toObj())).name
+          const expected = 'Name'
+          assert.equal(actual, expected)
+        })
+      })
     })
     describe('#fetcher()', () => {
       it('should call the datastoreProvider.retrieve with the model and id', async () => {
@@ -357,6 +376,59 @@ describe('/src/orm.ts', () => {
           .toObj()
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
+      })
+    })
+    describe('#count()', () => {
+      it('should return 2 when there are 2 models', async () => {
+        const datastoreProvider = createDatastore()
+        const instance = orm({ datastoreProvider })
+        const model = instance.BaseModel<{ name: string }>('MyModel', {
+          properties: { name: TextProperty() },
+        })
+        await model.create({ name: 'hello world' }).save()
+        await model.create({ name: 'hello world 2' }).save()
+        const actual = await model.count()
+        const expected = 2
+        assert.equal(actual, expected)
+      })
+      it('should return 3 when there are 3 models and the datastore returns a page to be called twice', async () => {
+        const datastoreProvider = {
+          search: sinon.stub()
+            .onFirstCall().resolves({
+              page: 'page',
+              instances: [{
+                toObj: sinon.stub().resolves({})
+              },{
+                toObj: sinon.stub().resolves({})
+              }]
+            })
+            .onSecondCall().resolves({
+              page: null,
+              instances: [{ 
+                toObj: sinon.stub().resolves({})
+              }]
+            })
+        }
+        // @ts-ignore
+        const instance = orm({ datastoreProvider })
+        const model = instance.BaseModel<{ name: string }>('MyModel', {
+          properties: { name: TextProperty() },
+        })
+        const actual = await model.count()
+        const expected = 3 
+        assert.equal(actual, expected)
+      })
+      it('should use the datastoreProvider.count if available', async () => {
+        const datastoreProvider = {
+          count: sinon.stub().resolves(10)
+        }
+        // @ts-ignore
+        const instance = orm({ datastoreProvider })
+        const model = instance.BaseModel<{ name: string }>('MyModel', {
+          properties: { name: TextProperty() },
+        })
+        await model.count()
+        assert.isTrue(datastoreProvider.count.called)
       })
     })
     describe('#bulkInsert()', () => {

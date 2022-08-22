@@ -1,10 +1,11 @@
 {
   "name": "functional-models-orm",
-  "version": "2.0.18",
+  "version": "2.0.19",
   "description": "A basic ORM building library using the functional-models library.",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
+    "watch": "tsc -w --noEmit",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage": "nyc npm run test",
     "feature-tests": "./node_modules/.bin/cucumber-js -p default",
@@ -68,7 +69,7 @@
     "sinon": "^11.1.2",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.4.0",
-    "typescript": "^4.5.2"
+    "typescript": "^4.7.4"
   },
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
