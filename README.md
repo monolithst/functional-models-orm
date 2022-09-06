@@ -5,11 +5,11 @@
 [![Coverage Status](https://coveralls.io/repos/github/monolithst/functional-models-orm/badge.svg?branch=master)](https://coveralls.io/github/monolithst/functional-models-orm?branch=master)
 
 
-The backbone library for building an object relationship mapper (ORM) for ![functional-models](https://github.com/monolithst/functional-models).
+The backbone library for building an object relationship mapper (ORM) for [functional-models](https://github.com/monolithst/functional-models).
 The primary extensions to this library relate to the "DatastoreProvider" which is effectively a database backing. To date the following are DatastoreProvider's available.
 
-- ![AWS DynamoDB](https://github.com/monolithst/functional-models-orm-dynamo).
-- ![MongoDB / DocumentDB](https://github.com/monolithst/functional-models-orm-mongo).
+- [AWS DynamoDB](https://github.com/monolithst/functional-models-orm-dynamo).
+- [MongoDB / DocumentDB](https://github.com/monolithst/functional-models-orm-mongo).
 
 ## General Design
 This ORM is designed to be able to provide the following standardized capabilities.
