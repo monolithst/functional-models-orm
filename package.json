@@ -8,7 +8,7 @@
     "watch": "tsc -w --noEmit",
     "test": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage": "nyc npm run test",
-    "feature-tests": "./node_modules/.bin/cucumber-js -p default",
+    "feature-tests": "node ./node_modules/.bin/cucumber-js --require ./features/stepDefinitions/*.js",
     "coverage": "nyc --all --reporter=lcov npm test",
     "build": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist",
     "dist": "npm run build && cd dist && npm publish"
