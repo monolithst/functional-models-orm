@@ -22,5 +22,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
         run: npm install
+      - name: Build 
+        run: npm run build 
       - name: Run Cucumber Tests
         run: npm run feature-tests
