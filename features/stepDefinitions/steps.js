@@ -1,9 +1,9 @@
 const assert = require('chai').assert
 const { Given, When, Then } = require('cucumber')
 const { Property, Model, UniqueId } = require('functional-models')
-const orm = require('../../dist/orm')
+const orm = require('../../dist/orm').default
 const { ormQueryBuilder } = require('../../dist/ormQuery')
-const memoryDatastoreProvider = require('../../dist/datastore/memory')
+const memoryDatastoreProvider = require('../../dist/datastore/memory').default
 
 const DATASTORES = {
   MemoryDatastoreProvider: memoryDatastoreProvider(),
@@ -21,8 +21,10 @@ const MODELS = {
   Model1: [
     'Model1',
     {
-      id: UniqueId(),
-      name: Property('MyProperty'),
+      properties: {
+        id: UniqueId(),
+        name: Property('MyProperty'),
+      }
     },
   ],
 }
@@ -51,7 +53,7 @@ Given('orm using the {word}', function (store) {
     throw new Error(`${store} did not result in a datastore.`)
   }
 
-  this.BaseModel = orm({ datastoreProvider: store }).Model
+  this.BaseModel = orm({ datastoreProvider: store }).BaseModel
   this.datastoreProvider = store
 })
 
@@ -60,7 +62,7 @@ Given('the orm is used to create {word}', function (modelType) {
   if (!model) {
     throw new Error(`${modelType} did not result in a model.`)
   }
-  this.model = this.Model(...model)
+  this.model = this.BaseModel(...model)
 })
 
 Given('the ormQueryBuilder is used to make {word}', function (queryKey) {
@@ -78,7 +80,7 @@ When('instances of the model are created with {word}', function (dataKey) {
   this.instances = MODEL_DATA[dataKey].map(this.model.create)
 })
 
-When('an instance of the model is created with {word}', function (dataKey) {
+When('an instance of the model is created with {word}', async function (dataKey) {
   const data = MODEL_DATA[dataKey]
   if (!data) {
     throw new Error(`${dataKey} did not result in a data object.`)
@@ -95,7 +97,7 @@ When('save is called on the model', function () {
 })
 
 When('delete is called on the model', function () {
-  return this.modelInstance.functions
+  return this.modelInstance
     .delete()
     .then(x => (this.deleteResult = x))
 })
