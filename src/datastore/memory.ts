@@ -14,8 +14,6 @@ import {
 } from 'functional-models/interfaces'
 import {
   DatastoreProvider,
-  OrmModel,
-  OrmModelInstance,
   OrmQuery,
   DatesBeforeStatement,
   DatastoreSearchResult,
@@ -53,9 +51,13 @@ type SimpleObj = {
   [s: string]: any
 }
 
+
 const memoryDatastoreProvider = (
   seedModelsByModelName: SeedModels = {},
-  { getSeedPrimaryKeyName = () => 'id' } = {}
+  {
+    getSeedPrimaryKeyName = () => 'id',
+    onDbChanged = (db: ModelsDb) => ({}),
+  } = {}
 ): DatastoreProvider => {
   if (!getSeedPrimaryKeyName) {
     throw new Error(`Configuration must include getSeedPrimaryKey.`)
@@ -87,6 +89,9 @@ const memoryDatastoreProvider = (
           // @ts-ignore
           // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
+          if(onDbChanged) {
+            onDbChanged(db)
+          }
           return obj as ModelInstanceInputData<T>
         })
     )
@@ -106,6 +111,9 @@ const memoryDatastoreProvider = (
             // @ts-ignore
             // eslint-disable-next-line functional/immutable-data
             delete db[modelName][obj[primaryKey]]
+            if(onDbChanged) {
+              onDbChanged(db)
+            }
           }
         })
     )
