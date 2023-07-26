@@ -18,7 +18,24 @@ import {
   ModelMethodGetters,
   ModelReference, InstanceMethodGetters,
 } from 'functional-models/interfaces'
-import { EQUALITY_SYMBOLS, ORMType } from './constants'
+
+enum EQUALITY_SYMBOLS {
+  EQUALS = '=',
+  LT = '<',
+  LTE = '<=',
+  GT = '>',
+  GTE = '>=',
+}
+
+enum ORMType {
+  string = 'string',
+  number = 'number',
+  date = 'date',
+  object = 'object',
+  boolean = 'boolean',
+}
+
+const ALLOWABLE_EQUALITY_SYMBOLS = Object.values(EQUALITY_SYMBOLS)
 
 type SaveMethod<
   T extends FunctionalModel,
@@ -385,4 +402,7 @@ export {
   OrmModelReference,
   OrmQueryBuilder,
   OrmSearchResult,
+  EQUALITY_SYMBOLS,
+  ORMType,
+  ALLOWABLE_EQUALITY_SYMBOLS,
 }
