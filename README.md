@@ -4,7 +4,6 @@
 ![Feature Tests](https://github.com/monolithst/functional-models-orm/actions/workflows/feature.yml/badge.svg?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/monolithst/functional-models-orm/badge.svg?branch=master)](https://coveralls.io/github/monolithst/functional-models-orm?branch=master)
 
-
 The backbone library for building an object relationship mapper (ORM) for [functional-models](https://github.com/monolithst/functional-models).
 The primary extensions to this library relate to the "DatastoreProvider" which is effectively a database backing. To date the following are DatastoreProvider's available.
 
@@ -12,6 +11,7 @@ The primary extensions to this library relate to the "DatastoreProvider" which i
 - [MongoDB / DocumentDB](https://github.com/monolithst/functional-models-orm-mongo).
 
 ## General Design
+
 This ORM is designed to be able to provide the following standardized capabilities.
 
 - Functional Paradigm (no state changes / object modifications, wherever possible).
@@ -19,24 +19,25 @@ This ORM is designed to be able to provide the following standardized capabiliti
 - Ability to support auto-serialize with nested model instances, via a Model Reference and "foreign keys"
 
 ## Supported Queries/Operations
+
 Out of the box the primary interfaces for a DatastoreProvider are the following
 
 - save
 - delete (one)
 - retrieve (one)
 - search
-- searchOne**
-- bulkInsert**
-- createAndSave**
+- searchOne\*\*
+- bulkInsert\*\*
+- createAndSave\*\*
 
-** These interfaces, if not defined, rely on in-memory logic to perform the operation. These however, can be overrided to provide a database specific way of doing this kind of query.
-
+\*\* These interfaces, if not defined, rely on in-memory logic to perform the operation. These however, can be overrided to provide a database specific way of doing this kind of query.
 
 ## General Design.
+
 To use the orm, all one needs is a configured DatastoreProvider. Once this is passed into the orm module, the orm gives access to function such as `BaseModel`, which is a replacement BaseModel found in functional-models. This is why you will see a BaseModel, passed into a models module. All of the overriding an providing the deep functional is done through the BaseModel. This allows any functional-models BaseModel, to be added to an orm, usually with no changes.
 
-
 ## Examples
+
 The following are some basic use examples. Depending on the DatastoreProvider implementation, additional setup may be required.
 
 ### Setup
@@ -59,7 +60,6 @@ const myModels = models({ BaseModel: myOrm.BaseModel })
 // Now your models are database backed.
 ```
 
-
 ### Create / Update
 
 ```
@@ -77,14 +77,9 @@ const Trains = myOrm.BaseModel('Trains', {
 // Create a model as usual.
 const modelInstance = Trains.create({ name: 'Yellow Train'})
 
-// Was this created by code or by a datastore?
-console.log(modelInstance.isDirty() === true)     // true means this did not come from a database call. 
-
 // Save this to a datastore, get back a cleaned version of the model.
 const savedModel = await modelInstance.save()
 
-// Was this created by the datastore? yes. - No need to save again.
-console.log(savedModel.isDirty() === true)        // false
 console.log(await savedModel.toObj())
 /*
 {
@@ -101,7 +96,6 @@ Note: The implementation of an "update" is the same as create. Because of the "f
 ```
 // Retrieve the model instance by its id.
 const modelInstance = await Trains.retrieve('my-model-id')
-console.log(modelInstance.isDirty() === true)        // false, this is from the datastore.
 ```
 
 ### Search (Retrieve Many)
@@ -118,7 +112,7 @@ const searchResults = await Trains.search(query)
 console.log(searchResults)
 /*
 {
-  page: undefined,  // if there is a multi-page situation, this is the DatastoreProvider specific object, for getting the next page. 
+  page: undefined,  // if there is a multi-page situation, this is the DatastoreProvider specific object, for getting the next page.
   instances: [
     {...} // matched functional-model instance.
     {...} // matched functional-model instance.
@@ -137,8 +131,10 @@ const myTrainInstance = Trains.create({ id: 'an-existing-id' })
 await myModel.delete(myTrainInstance)
 ```
 
-## Supported data types 
+## Supported data types
+
 The following are the supported data types (ORMType):
+
 ```
 enum ORMType {
   string = 'string',
@@ -149,13 +145,13 @@ enum ORMType {
 }
 ```
 
-
 ## ORM Query Searching
+
 An out of the box method for doing orm searches is provided called an "OrmQuery". The following are some more robust examples for doing common searching.
 NOTE: There are major limitations to the current implementation of "AND" and "OR" statements and the structure they are housed in. Simple AND, OR statements are provided, however, complex groupings are not supported currently.
 
-
 ### Search Example: Search by a value of one property AND another property.
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -172,6 +168,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Numbers
+
 ```
 import { ormQuery, constants } from 'functional-models-orm'
 
@@ -188,6 +185,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Limiting Results
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -204,7 +202,8 @@ const query = ormQuery.ormQueryBuilder()
 const searchResults = await MyModels.search(query)
 ```
 
-### Search Example: Paging 
+### Search Example: Paging
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -212,7 +211,7 @@ import { ormQuery } from 'functional-models-orm'
 Query:
 Give me up to 10 instances of type MyModels, that has a name "the-models-name" (case insensitive), and has a textField property that starts with "something-in-the-field", starting at the given page.
 */
-const pageDataFromAnotherQuery = {}  
+const pageDataFromAnotherQuery = {}
 
 const query = ormQuery.ormQueryBuilder()
     .property('name', 'the-models-name')
@@ -224,7 +223,8 @@ const query = ormQuery.ormQueryBuilder()
 const searchResults = await MyModels.search(query)
 ```
 
-### Search Example: Before a given date 
+### Search Example: Before a given date
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -243,6 +243,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Before a given date INCLUDING that date
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -261,6 +262,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: After a given date
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -279,6 +281,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Between given dates (including the dates)
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -298,6 +301,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Sorting (Descending)
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -318,6 +322,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Sorting (Ascending)
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -338,6 +343,7 @@ const searchResults = await MyModels.search(query)
 ```
 
 ### Search Example: Multiple values of a single property
+
 ```
 import { ormQuery } from 'functional-models-orm'
 
@@ -355,8 +361,8 @@ const query = ormQuery.ormQueryBuilder()
 const searchResults = await MyModels.search(query)
 ```
 
-
 ### Search Example: ORing multiple properties (with numbers)
+
 ```
 import { ormQuery, constants } from 'functional-models-orm'
 

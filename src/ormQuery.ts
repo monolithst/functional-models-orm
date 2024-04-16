@@ -47,7 +47,6 @@ const compile = (queryData: readonly OrmQueryStatement[]) => (): OrmQuery => {
   }, startingQuery)
 }
 
-
 const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
   const datesAfter = (
     key: string,
@@ -162,7 +161,9 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
     return _addStatementAndReturn(statement)
   }
 
-  const _addStatementAndReturn = (statement: OrmQueryStatement) : OrmQueryBuilder => {
+  const _addStatementAndReturn = (
+    statement: OrmQueryStatement
+  ): OrmQueryBuilder => {
     return ormQueryBuilder([...queryData, statement])
   }
 
@@ -180,6 +181,4 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
   return builder
 }
 
-export {
-  ormQueryBuilder
-}
+export { ormQueryBuilder }

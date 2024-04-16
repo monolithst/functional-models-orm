@@ -51,7 +51,7 @@ const uniqueTogether = <
   TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
     T,
     TModel
-  >
+  >,
 >(
   propertyKeyArray: readonly string[]
 ) => {
@@ -97,7 +97,7 @@ const unique = <
   TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
     T,
     TModel
-  >
+  >,
 >(
   propertyKey: string
 ): PropertyValidatorComponentAsync<T, TModel, TModelInstance> => {

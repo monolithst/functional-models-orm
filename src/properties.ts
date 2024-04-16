@@ -7,15 +7,12 @@ import {
   Arrayable,
   FunctionalValue,
   FunctionalModel,
+  ModelReference,
+  PropertyModifier,
 } from 'functional-models/interfaces'
 
 import { unique, uniqueTogether } from './validation'
-import {
-  OrmModel,
-  OrmModelInstance,
-  OrmPropertyConfig,
-  OrmModelReference,
-} from './interfaces'
+import { OrmModel, OrmPropertyConfig } from './interfaces'
 
 const _defaultPropertyConfig = {
   unique: undefined,
@@ -29,20 +26,19 @@ const LastModifiedDateProperty = (
   return DateProperty(config, additionalMetadata)
 }
 
-const OrmModelReferenceProperty = <T extends FunctionalModel>(
+const OrmModelReferenceProperty = <
+  T extends FunctionalModel,
+  TModifier extends PropertyModifier<ModelReference<T>> = PropertyModifier<
+    ModelReference<T>
+  >,
+>(
   model: OrmModel<T>,
-  config?: PropertyConfig<OrmModelReference<T>>
-) =>
-  AdvancedModelReferenceProperty<
-    T,
-    OrmModel<T>,
-    OrmModelInstance<T, OrmModel<T>>,
-    OrmModelReference<T>
-  >(model, config)
+  config?: PropertyConfig<TModifier>
+) => AdvancedModelReferenceProperty<T>(model as any, config as any)
 
 const ormPropertyConfig = <T extends Arrayable<FunctionalValue>>(
   config: OrmPropertyConfig<T> = _defaultPropertyConfig
-) => {
+): PropertyConfig<T> => {
   return merge(config, {
     validators: [
       ...(config.validators ? config.validators : []),

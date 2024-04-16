@@ -3,14 +3,18 @@ import values from 'lodash/values'
 import flatten from 'lodash/flatten'
 import get from 'lodash/get'
 import orderBy from 'lodash/orderBy'
+/* eslint-disable import/no-duplicates */
 import isBefore from 'date-fns/isBefore'
 import isAfter from 'date-fns/isAfter'
 import isEqual from 'date-fns/isEqual'
+/* eslint-enable import/no-duplicates */
 import {
   FunctionalModel,
-  JsonAble, Model, ModelInstance,
-  ModelInstanceInputData,
+  JsonAble,
+  Model,
+  ModelInstance,
   PrimaryKeyType,
+  TypedJsonObj,
 } from 'functional-models/interfaces'
 import {
   DatastoreProvider,
@@ -21,7 +25,7 @@ import {
 
 const _getDbEntryInfo = async <
   T extends FunctionalModel,
-  TModel extends Model<T>
+  TModel extends Model<T>,
 >(
   instance: ModelInstance<T, TModel>
 ) => {
@@ -35,14 +39,14 @@ const _getDbEntryInfo = async <
 type ModelType = string
 type SeedModels = {
   // eslint-disable-next-line functional/prefer-readonly-type
-  [s: ModelType]: readonly ModelInstanceInputData<any>[]
+  [s: ModelType]: readonly TypedJsonObj<any>[]
 }
 
 type ModelsDb = {
   // eslint-disable-next-line functional/prefer-readonly-type
   [s: ModelType]: {
     // eslint-disable-next-line functional/prefer-readonly-type
-    [s: PrimaryKeyType]: readonly ModelInstanceInputData<any>[]
+    [s: PrimaryKeyType]: readonly TypedJsonObj<any>[]
   }
 }
 
@@ -51,13 +55,20 @@ type SimpleObj = {
   [s: string]: any
 }
 
+type MemoryDatastoreProviderProps = Readonly<{
+  getSeedPrimaryKeyName?: () => string
+  onDbChanged: (db: ModelsDb) => void
+}>
 
 const memoryDatastoreProvider = (
   seedModelsByModelName: SeedModels = {},
   {
     getSeedPrimaryKeyName = () => 'id',
-    onDbChanged = (db: ModelsDb) => ({}),
-  } = {}
+    onDbChanged = () => undefined,
+  }: MemoryDatastoreProviderProps = {
+    getSeedPrimaryKeyName: () => 'id',
+    onDbChanged: () => undefined,
+  }
 ): DatastoreProvider => {
   if (!getSeedPrimaryKeyName) {
     throw new Error(`Configuration must include getSeedPrimaryKey.`)
@@ -65,8 +76,11 @@ const memoryDatastoreProvider = (
   const db: ModelsDb = Object.entries(seedModelsByModelName).reduce(
     (acc, [modelName, models]) => {
       const data = models.reduce((inner, model) => {
-        // @ts-ignore
-        return { ...(inner as object), [model[getSeedPrimaryKeyName(model)]]: model }
+        return {
+          ...(inner as object),
+          // @ts-ignore
+          [model[getSeedPrimaryKeyName(model)]]: model,
+        }
       }, {})
       return merge({}, acc, { [modelName]: data })
     },
@@ -75,7 +89,7 @@ const memoryDatastoreProvider = (
 
   const save = <T extends FunctionalModel, TModel extends Model<T>>(
     instance: ModelInstance<T, TModel>
-  ): Promise<ModelInstanceInputData<T>> => {
+  ): Promise<TypedJsonObj<T>> => {
     return (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
@@ -89,10 +103,10 @@ const memoryDatastoreProvider = (
           // @ts-ignore
           // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
-          if(onDbChanged) {
+          if (onDbChanged) {
             onDbChanged(db)
           }
-          return obj as ModelInstanceInputData<T>
+          return obj as TypedJsonObj<T>
         })
     )
   }
@@ -111,7 +125,7 @@ const memoryDatastoreProvider = (
             // @ts-ignore
             // eslint-disable-next-line functional/immutable-data
             delete db[modelName][obj[primaryKey]]
-            if(onDbChanged) {
+            if (onDbChanged) {
               onDbChanged(db)
             }
           }
@@ -131,7 +145,7 @@ const memoryDatastoreProvider = (
         return undefined
       }
       // @ts-ignore
-      return x as ModelInstanceInputData<T, any>
+      return x as TypedJsonObj<T, any>
     })
   }
 
@@ -159,8 +173,8 @@ const memoryDatastoreProvider = (
           const value = partial.options.startsWith
             ? `^${partial.value}`
             : partial.options.endsWith
-            ? `${partial.value}$`
-            : `^${partial.value}$`
+              ? `${partial.value}$`
+              : `^${partial.value}$`
           const reg = new RegExp(value, flag)
           return (obj: SimpleObj) => reg.test(obj[partial.name])
         } else if (partial.valueType === 'number') {
@@ -185,23 +199,26 @@ const memoryDatastoreProvider = (
       type ValidationFunc = (obj: SimpleObj) => boolean
       const models = db[modelName] as {
         // eslint-disable-next-line functional/prefer-readonly-type
-        [s: PrimaryKeyType]: readonly ModelInstanceInputData<T>[]
+        [s: PrimaryKeyType]: readonly TypedJsonObj<T>[]
       }
       const beforeFilters = Object.entries(
         ormQuery.datesBefore ||
-          ({} as { readonly [s: string]: DatesBeforeStatement })
-      ).reduce((acc, [key, partial]) => {
-        const func = (theirObj: SimpleObj) => {
-          // @ts-ignore
-          const asDate = new Date(theirObj[key])
-          const thisDate = new Date(partial.date)
-          const before = isBefore(asDate, thisDate)
-          return partial.options.equalToAndBefore
-            ? before || isEqual(asDate, thisDate)
-            : before
-        }
-        return [...acc, func]
-      }, [] as readonly ValidationFunc[])
+          ({} as Readonly<{ [s: string]: DatesBeforeStatement }>)
+      ).reduce(
+        (acc, [key, partial]) => {
+          const func = (theirObj: SimpleObj) => {
+            // @ts-ignore
+            const asDate = new Date(theirObj[key])
+            const thisDate = new Date(partial.date)
+            const before = isBefore(asDate, thisDate)
+            return partial.options.equalToAndBefore
+              ? before || isEqual(asDate, thisDate)
+              : before
+          }
+          return [...acc, func]
+        },
+        [] as readonly ValidationFunc[]
+      )
       const afterFilters = Object.entries(ormQuery.datesAfter || {}).reduce(
         (acc, [key, partial]) => {
           return [
@@ -245,7 +262,7 @@ const memoryDatastoreProvider = (
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
         : results
-      const sorted: readonly ModelInstanceInputData<T>[] = ormQuery.sort
+      const sorted: readonly TypedJsonObj<T>[] = ormQuery.sort
         ? orderBy(
             instances,
             [ormQuery.sort.key],
