@@ -24,7 +24,7 @@ const MODELS = {
       properties: {
         id: UniqueId(),
         name: Property('MyProperty'),
-      }
+      },
     },
   ],
 }
@@ -80,13 +80,16 @@ When('instances of the model are created with {word}', function (dataKey) {
   this.instances = MODEL_DATA[dataKey].map(this.model.create)
 })
 
-When('an instance of the model is created with {word}', async function (dataKey) {
-  const data = MODEL_DATA[dataKey]
-  if (!data) {
-    throw new Error(`${dataKey} did not result in a data object.`)
+When(
+  'an instance of the model is created with {word}',
+  async function (dataKey) {
+    const data = MODEL_DATA[dataKey]
+    if (!data) {
+      throw new Error(`${dataKey} did not result in a data object.`)
+    }
+    this.modelInstance = this.model.create(data)
   }
-  this.modelInstance = this.model.create(data)
-})
+)
 
 When('save is called on the instances', function () {
   return Promise.all(this.instances.map(x => x.save()))
@@ -97,9 +100,7 @@ When('save is called on the model', function () {
 })
 
 When('delete is called on the model', function () {
-  return this.modelInstance
-    .delete()
-    .then(x => (this.deleteResult = x))
+  return this.modelInstance.delete().then(x => (this.deleteResult = x))
 })
 
 When("the datastore's retrieve is called with values", function (table) {

@@ -6,12 +6,13 @@ import {
   ModelFetcher,
   PrimaryKeyType,
   ModelDefinition,
-  ModelInstanceInputData,
   FunctionalModel,
   ModelInstance,
   CreateParams,
   PropertyInstance,
+  TypedJsonObj,
 } from 'functional-models/interfaces'
+import { uniqueTogether } from './validation'
 import {
   OrmModelInstance,
   OrmModel,
@@ -21,21 +22,19 @@ import {
   OrmOptionalModelOptions,
   SaveOverride,
   DeleteOverride,
-  OrmModelOptions, TakeStatement,
+  OrmModelOptions,
 } from './interfaces'
 import { ormQueryBuilder } from './ormQuery'
 
 const { ValidationError } = errors
-const isDirtyFalse = () => false
-const isDirtyTrue = () => true
 
 const orm = ({
   datastoreProvider,
   BaseModel = functionalModel,
-}: {
-  readonly datastoreProvider: DatastoreProvider
-  readonly BaseModel?: ModelFactory
-}) => {
+}: Readonly<{
+  datastoreProvider: DatastoreProvider
+  BaseModel?: ModelFactory
+}>) => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }
@@ -47,28 +46,27 @@ const orm = ({
       TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
         T,
         TModel
-      >
+      >,
     >(
       model: TModel
     ) =>
-    (obj: ModelInstanceInputData<T>): TModelInstance => {
-      return merge(model.create(obj) as unknown as TModelInstance, {
-        methods: {
-          isDirty: isDirtyFalse,
-        },
-      })
+    (obj: TypedJsonObj<T>): TModelInstance => {
+      return merge(model.create(obj) as unknown as TModelInstance, {})
     }
 
   // @ts-ignore
-  const fetcher: ModelFetcher = <
+  const fetcher: ModelFetcher = async <
     T extends FunctionalModel,
-    TModel extends OrmModel<T>
+    TModel extends OrmModel<T>,
   >(
     model: Model<T>,
     id: PrimaryKeyType
   ) => {
-    // @ts-ignore
-    return retrieve(model as TModel, id)
+    const obj = await retrieve<T, TModel>(model as TModel, id)
+    if (obj) {
+      return obj.toObj()
+    }
+    return undefined
   }
 
   const retrieve = async <
@@ -77,7 +75,7 @@ const orm = ({
     TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
       T,
       TModel
-    >
+    >,
   >(
     model: TModel,
     id: PrimaryKeyType
@@ -95,7 +93,7 @@ const orm = ({
     TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
       T,
       TModel
-    >
+    >,
   >(): OrmModelOptions<T, TModel, TModelInstance> => ({
     instanceCreatedCallback: null,
   })
@@ -106,7 +104,7 @@ const orm = ({
     TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
       T,
       TModel
-    >
+    >,
   >(
     options?: OrmOptionalModelOptions<T, TModel, TModelInstance>
   ) => {
@@ -124,10 +122,10 @@ const orm = ({
     TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
       T,
       TModel
-    >
+    >,
   >(
     modelName: string,
-    keyToProperty: ModelDefinition<T, TModel, TModelInstance>,
+    keyToProperty: ModelDefinition<T, TModel>,
     options?: OrmOptionalModelOptions<T, TModel, TModelInstance>
   ) => {
     /*
@@ -154,10 +152,9 @@ const orm = ({
 
     const searchOne = (ormQuery: OrmQuery) => {
       ormQuery = merge(ormQuery, { take: 1 })
-      return search(ormQuery)
-        .then(({instances}) => {
-          return instances[0]
-        })
+      return search(ormQuery).then(({ instances }) => {
+        return instances[0]
+      })
     }
 
     const bulkInsert = async (instances: readonly TModelInstance[]) => {
@@ -176,13 +173,16 @@ const orm = ({
       return retrieve<T, TModel, TModelInstance>(model, id)
     }
 
-    const ormModelDefinitions = {
-      instanceMethods: {
-        isDirty: isDirtyTrue,
-      },
-    }
+    const modelValidators = options?.uniqueTogether
+      ? (keyToProperty.modelValidators || []).concat(
+          // @ts-ignore
+          uniqueTogether(options.uniqueTogether)
+        )
+      : keyToProperty.modelValidators
 
-    const newKeyToProperty = merge({}, keyToProperty, ormModelDefinitions)
+    const newKeyToProperty = merge({}, keyToProperty, {
+      modelValidators,
+    })
 
     const _updateLastModifiedIfExistsReturnNewObj = async (
       instance: TModelInstance
@@ -208,11 +208,11 @@ const orm = ({
 
     const save = async (instance: TModelInstance): Promise<TModelInstance> => {
       return Promise.resolve().then(async () => {
-        const newInstance = await _updateLastModifiedIfExistsReturnNewObj(
-          instance
-        )
+        const newInstance =
+          await _updateLastModifiedIfExistsReturnNewObj(instance)
         const valid = await newInstance.validate()
         if (Object.keys(valid).length > 0) {
+          // @ts-ignore
           throw new ValidationError(modelName, valid)
         }
         const savedObj = await datastoreProvider.save<T, TModel>(newInstance)
@@ -228,7 +228,7 @@ const orm = ({
         return _retrievedObjToModel<T, TModel, TModelInstance>(model)(response)
       }
       const instance = model.create(
-        (await data.toObj()) as ModelInstanceInputData<T>
+        (await data.toObj()) as TypedJsonObj<T>
       ) as unknown as TModelInstance
       return instance.save()
     }
@@ -262,7 +262,6 @@ const orm = ({
       }
       return () => deleteObj(instance)
     }
-
     const instanceCreatedCallback = (instance: ModelInstance<T, TModel>) => {
       const ormInstance = instance as TModelInstance
       // eslint-disable-next-line functional/immutable-data
@@ -294,9 +293,6 @@ const orm = ({
       instance: TModelInstance
     ): TModelInstance => {
       return merge(instance as TModelInstance, {
-        methods: {
-          isDirty: isDirtyTrue,
-        },
         create,
         getModel: () => model as TModel,
         save: _getSave(instance as TModelInstance),
@@ -309,10 +305,9 @@ const orm = ({
       return _convertModelInstance(result as unknown as TModelInstance)
     }
 
-    const _countRecursive = async (page=null) : Promise<number> => {
-      const results = await model.search(ormQueryBuilder()
-        .pagination(page)
-        .compile()
+    const _countRecursive = async (page = null): Promise<number> => {
+      const results = await model.search(
+        ormQueryBuilder().pagination(page).compile()
       )
       const length1 = results.instances.length
       // Don't run it again if the page is the same as a previous run.
@@ -322,8 +317,8 @@ const orm = ({
       }
       return length1
     }
-    
-    const count = async () : Promise<number> => {
+
+    const count = async (): Promise<number> => {
       // NOTE: This is EXTREMELY inefficient. This should be
       // overrided by a dataProvider if at all possible.
       if (datastoreProvider.count) {

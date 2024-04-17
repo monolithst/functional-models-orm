@@ -3,7 +3,12 @@ import sinon from 'sinon'
 import createDatastore from '../../src/datastore/memory'
 import orm from '../../src/orm'
 import { LastModifiedDateProperty } from '../../src/properties'
-import { BaseModel, TextProperty, UniqueId } from 'functional-models'
+import {
+  BaseModel,
+  NumberProperty,
+  TextProperty,
+  UniqueId,
+} from 'functional-models'
 import { OrmModelInstance } from '../../src/interfaces'
 import { ormQueryBuilder } from '../../src/ormQuery'
 
@@ -51,6 +56,38 @@ describe('/src/orm.ts', () => {
         assert.doesNotThrow(() => {
           instance.BaseModel('MyModel', { properties: {} })
         })
+      })
+      it('should create a uniqueTogether validation when "uniqueTogether" is used.', async () => {
+        const datastoreProvider = createDatastore({
+          Test: [
+            {
+              name: 'my-name',
+              age: 1,
+            },
+          ],
+        })
+        const instance = orm({ datastoreProvider, BaseModel })
+        const model = instance.BaseModel<{ name: string; age: number }>(
+          'Test',
+          {
+            properties: {
+              name: TextProperty(),
+              age: NumberProperty(),
+            },
+          },
+          {
+            uniqueTogether: ['name', 'age'],
+          }
+        )
+        const modelInstance = model.create({ name: 'my-name', age: 1 })
+        const actual = await modelInstance.validate()
+        const expected = {
+          overall: [
+            'name,age must be unique together. Another instance found.',
+          ],
+        }
+        // @ts-ignore
+        assert.deepEqual(actual, expected)
       })
       describe('#createAndSave()', () => {
         it('should call create() and then call save() when createAndSave() is not available on the datastoreProvider', async () => {
@@ -114,26 +151,6 @@ describe('/src/orm.ts', () => {
           )
           model.create({})
           sinon.assert.calledOnce(instanceCreatedCallback)
-        })
-        it('should return an instance where meta.isDirty === true', async () => {
-          const datastoreProvider = {
-            save: sinon.stub().returns({ name: 'my-name' }),
-          }
-          // @ts-ignore
-          const instance = orm({ datastoreProvider, BaseModel })
-          const model = instance.BaseModel<{ name: string }>(
-            'MyModel',
-            {
-              properties: {
-                name: TextProperty({ required: true }),
-              },
-            },
-            {}
-          )
-          const actual = model.create({
-            name: 'my-name',
-          })
-          assert.isTrue(actual.methods.isDirty())
         })
         describe('#delete()', () => {
           it('should replace delete() with DeleteOverride when passed into options', async () => {
@@ -262,27 +279,6 @@ describe('/src/orm.ts', () => {
             const expected = modelInstance
             assert.deepEqual(actual, expected)
           })
-          it('should return an instance where methods.isDirty() === false', async () => {
-            const datastoreProvider = {
-              save: sinon.stub().returns({ name: 'my-name' }),
-            }
-            // @ts-ignore
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{ name: string }>(
-              'MyModel',
-              {
-                properties: {
-                  name: TextProperty({ required: true }),
-                },
-              },
-              {}
-            )
-            const modelInstance = model.create({
-              name: 'my-name',
-            })
-            const actual = await modelInstance.save()
-            assert.isFalse(actual.methods.isDirty())
-          })
         })
       })
       describe('#retrieve()', () => {
@@ -320,16 +316,21 @@ describe('/src/orm.ts', () => {
           const datastoreProvider = createDatastore()
           // @ts-ignore
           const instance = orm({ datastoreProvider, BaseModel })
-          const model = instance.BaseModel<{name: string}>('MyModel', { properties: {
-            name: TextProperty()
-          } }, {})
+          const model = instance.BaseModel<{ name: string }>(
+            'MyModel',
+            {
+              properties: {
+                name: TextProperty(),
+              },
+            },
+            {}
+          )
           await model.create({ name: 'Name' }).save()
           await model.create({ name: 'Name' }).save()
-          const ormQuery = ormQueryBuilder()
-            .property('name', 'Name')
-            .compile()
+          const ormQuery = ormQueryBuilder().property('name', 'Name').compile()
           // @ts-ignore
-          const actual = (await model.searchOne(ormQuery).then(x=>x.toObj())).name
+          const actual = (await model.searchOne(ormQuery).then(x => x.toObj()))
+            .name
           const expected = 'Name'
           assert.equal(actual, expected)
         })
@@ -369,11 +370,10 @@ describe('/src/orm.ts', () => {
         )
 
         // @ts-ignore
-        const actual = await (
-          await instance.fetcher<{ name: string }>(model, 'my-id')
+        const actual = await await instance.fetcher<{ name: string }>(
+          model,
+          'my-id'
         )
-          // @ts-ignore
-          .toObj()
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
       })
@@ -393,21 +393,29 @@ describe('/src/orm.ts', () => {
       })
       it('should return 3 when there are 3 models and the datastore returns a page to be called twice', async () => {
         const datastoreProvider = {
-          search: sinon.stub()
-            .onFirstCall().resolves({
+          search: sinon
+            .stub()
+            .onFirstCall()
+            .resolves({
               page: 'page',
-              instances: [{
-                toObj: sinon.stub().resolves({})
-              },{
-                toObj: sinon.stub().resolves({})
-              }]
+              instances: [
+                {
+                  toObj: sinon.stub().resolves({}),
+                },
+                {
+                  toObj: sinon.stub().resolves({}),
+                },
+              ],
             })
-            .onSecondCall().resolves({
+            .onSecondCall()
+            .resolves({
               page: null,
-              instances: [{ 
-                toObj: sinon.stub().resolves({})
-              }]
-            })
+              instances: [
+                {
+                  toObj: sinon.stub().resolves({}),
+                },
+              ],
+            }),
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider })
@@ -415,12 +423,12 @@ describe('/src/orm.ts', () => {
           properties: { name: TextProperty() },
         })
         const actual = await model.count()
-        const expected = 3 
+        const expected = 3
         assert.equal(actual, expected)
       })
       it('should use the datastoreProvider.count if available', async () => {
         const datastoreProvider = {
-          count: sinon.stub().resolves(10)
+          count: sinon.stub().resolves(10),
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider })
