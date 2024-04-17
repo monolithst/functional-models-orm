@@ -12,6 +12,7 @@ import {
   PropertyInstance,
   TypedJsonObj,
 } from 'functional-models/interfaces'
+import { uniqueTogether } from './validation'
 import {
   OrmModelInstance,
   OrmModel,
@@ -172,9 +173,16 @@ const orm = ({
       return retrieve<T, TModel, TModelInstance>(model, id)
     }
 
-    const ormModelDefinitions = {}
+    const modelValidators = options?.uniqueTogether
+      ? (keyToProperty.modelValidators || []).concat(
+          // @ts-ignore
+          uniqueTogether(options.uniqueTogether)
+        )
+      : keyToProperty.modelValidators
 
-    const newKeyToProperty = merge({}, keyToProperty, ormModelDefinitions)
+    const newKeyToProperty = merge({}, keyToProperty, {
+      modelValidators,
+    })
 
     const _updateLastModifiedIfExistsReturnNewObj = async (
       instance: TModelInstance
@@ -254,7 +262,6 @@ const orm = ({
       }
       return () => deleteObj(instance)
     }
-
     const instanceCreatedCallback = (instance: ModelInstance<T, TModel>) => {
       const ormInstance = instance as TModelInstance
       // eslint-disable-next-line functional/immutable-data

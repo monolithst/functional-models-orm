@@ -5,6 +5,7 @@ import {
   PrimaryKeyType,
   ModelError,
   JsonAble,
+  ModelValidatorComponent,
 } from 'functional-models/interfaces'
 import { ormQueryBuilder } from './ormQuery'
 import {
@@ -14,10 +15,14 @@ import {
   OrmModel,
 } from './interfaces'
 
-const _doUniqueCheck = async (
+const _doUniqueCheck = async <
+  T extends FunctionalModel,
+  TModel extends OrmModel<T>,
+  TModelInstance extends OrmModelInstance<T, TModel>,
+>(
   query: OrmQuery,
-  instance: any,
-  instanceData: any,
+  instance: TModelInstance,
+  instanceData: T | JsonAble,
   buildErrorMessage: () => ModelError
 ): Promise<ModelError> => {
   const model = instance.getModel()
@@ -31,6 +36,7 @@ const _doUniqueCheck = async (
     results.instances.map((x: any) => x.getPrimaryKey())
   )
   // We have our match by id.
+  // @ts-ignore
   const instanceId = instanceData[model.getPrimaryKeyName()]
   if (ids.length === 1 && ids[0] === instanceId) {
     return undefined
@@ -54,11 +60,11 @@ const uniqueTogether = <
   >,
 >(
   propertyKeyArray: readonly string[]
-) => {
+): ModelValidatorComponent<T, TModel, TModelInstance> => {
   const _uniqueTogether = async (
     instance: TModelInstance,
     instanceData: T | JsonAble,
-    options: OrmValidatorConfiguration = buildOrmValidationOptions({})
+    options: OrmValidatorConfiguration
   ) => {
     if (options.noOrmValidation) {
       return undefined
@@ -80,13 +86,18 @@ const uniqueTogether = <
     )(ormQueryBuilder())
       .take(2)
       .compile()
-    return _doUniqueCheck(query, instance, instanceData, () => {
-      return propertyKeyArray.length > 1
-        ? `${propertyKeyArray.join(
-            ','
-          )} must be unique together. Another instance found.`
-        : `${propertyKeyArray[0]} must be unique. Another instance found.`
-    })
+    return _doUniqueCheck<T, TModel, TModelInstance>(
+      query,
+      instance,
+      instanceData,
+      () => {
+        return propertyKeyArray.length > 1
+          ? `${propertyKeyArray.join(
+              ','
+            )} must be unique together. Another instance found.`
+          : `${propertyKeyArray[0]} must be unique. Another instance found.`
+      }
+    )
   }
   return _uniqueTogether
 }
@@ -113,8 +124,6 @@ const unique = <
       options
     )
   }
-  //const _unique = async (value: string, instance: any, instanceData: any, options: {noOrmValidation: boolean}) => {
-  //}
   return _unique
 }
 

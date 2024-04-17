@@ -3,7 +3,12 @@ import sinon from 'sinon'
 import createDatastore from '../../src/datastore/memory'
 import orm from '../../src/orm'
 import { LastModifiedDateProperty } from '../../src/properties'
-import { BaseModel, TextProperty, UniqueId } from 'functional-models'
+import {
+  BaseModel,
+  NumberProperty,
+  TextProperty,
+  UniqueId,
+} from 'functional-models'
 import { OrmModelInstance } from '../../src/interfaces'
 import { ormQueryBuilder } from '../../src/ormQuery'
 
@@ -51,6 +56,38 @@ describe('/src/orm.ts', () => {
         assert.doesNotThrow(() => {
           instance.BaseModel('MyModel', { properties: {} })
         })
+      })
+      it('should create a uniqueTogether validation when "uniqueTogether" is used.', async () => {
+        const datastoreProvider = createDatastore({
+          Test: [
+            {
+              name: 'my-name',
+              age: 1,
+            },
+          ],
+        })
+        const instance = orm({ datastoreProvider, BaseModel })
+        const model = instance.BaseModel<{ name: string; age: number }>(
+          'Test',
+          {
+            properties: {
+              name: TextProperty(),
+              age: NumberProperty(),
+            },
+          },
+          {
+            uniqueTogether: ['name', 'age'],
+          }
+        )
+        const modelInstance = model.create({ name: 'my-name', age: 1 })
+        const actual = await modelInstance.validate()
+        const expected = {
+          overall: [
+            'name,age must be unique together. Another instance found.',
+          ],
+        }
+        // @ts-ignore
+        assert.deepEqual(actual, expected)
       })
       describe('#createAndSave()', () => {
         it('should call create() and then call save() when createAndSave() is not available on the datastoreProvider', async () => {

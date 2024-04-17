@@ -13,6 +13,7 @@ import {
   OrmModelFactory,
   OrmQuery,
   PropertyStatement,
+  OrmModel,
 } from '../../src/interfaces'
 
 type TestType1 = { name?: string; description?: string }
@@ -241,7 +242,8 @@ describe('/src/validation.js', () => {
       const instanceData = await instance.toObj()
       await uniqueTogether<TestType1>(['name', 'description'])(
         instance,
-        instanceData
+        instanceData,
+        {}
       )
       sinon.assert.calledOnce(search)
     })

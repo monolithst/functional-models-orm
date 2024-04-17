@@ -92,7 +92,7 @@
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
     "date-fns": "^2.25.0",
-    "functional-models": "^2.1.0",
+    "functional-models": "^2.1.2",
     "lodash": "^4.17.21"
   }
 }

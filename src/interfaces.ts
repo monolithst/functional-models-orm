@@ -96,6 +96,7 @@ type OrmOptionalModelOptions<
       Readonly<{
         save?: SaveOverride<T, TModel, TModelInstance>
         delete?: DeleteOverride<T, TModel, TModelInstance>
+        uniqueTogether?: readonly string[]
         [s: string]: any
       }>)
   | undefined
@@ -301,7 +302,6 @@ type OrmPropertyConfig<T extends Arrayable<FunctionalValue>> =
   PropertyConfig<T> &
     Readonly<{
       unique?: string
-      uniqueTogether?: readonly string[]
       [s: string]: any
     }>
 
