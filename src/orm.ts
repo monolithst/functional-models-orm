@@ -62,11 +62,7 @@ const orm = ({
     model: Model<T>,
     id: PrimaryKeyType
   ) => {
-    const obj = await retrieve<T, TModel>(model as TModel, id)
-    if (obj) {
-      return obj.toObj()
-    }
-    return undefined
+    return retrieve<T, TModel>(model as TModel, id)
   }
 
   const retrieve = async <
