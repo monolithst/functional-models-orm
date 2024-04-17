@@ -370,10 +370,11 @@ describe('/src/orm.ts', () => {
         )
 
         // @ts-ignore
-        const actual = await await instance.fetcher<{ name: string }>(
-          model,
-          'my-id'
+        const actual = await (
+          await instance.fetcher<{ name: string }>(model, 'my-id')
         )
+          // @ts-ignore
+          .toObj()
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
       })
