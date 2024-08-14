@@ -1,7 +1,12 @@
+import sinon from 'sinon'
+import { assert } from 'chai'
 import get from 'lodash/get'
 import pick from 'lodash/pick'
-import { assert } from 'chai'
-import { ormQueryBuilder } from '../../src/ormQuery'
+import {
+  ormQueryBuilder,
+  queryBuilderPropertyFlowFunc,
+  ormQueryBuilderFlow,
+} from '../../src/ormQuery'
 import {
   OrmQueryStatement,
   PropertyStatement,
@@ -9,6 +14,7 @@ import {
   OrStatement,
   DatesAfterStatement,
   DatesBeforeStatement,
+  OrmQueryBuilder,
 } from '../../src/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
 
@@ -63,6 +69,57 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
   },
 }
 describe('/src/ormQuery.ts', () => {
+  describe('#ormQueryBuilderFlow()', () => {
+    it('should return a orm query even when called with an empty array', () => {
+      const ormQuery = ormQueryBuilderFlow([])
+      assert.isOk(ormQuery.properties)
+    })
+    it('should call passed in functions', () => {
+      const myBuilderFunc = sinon.stub().callsFake(x => x)
+      const ormQuery = ormQueryBuilderFlow([myBuilderFunc])
+      assert.isTrue(myBuilderFunc.called)
+    })
+    it('should pass in an ormQueryBuilder object into the functions', () => {
+      const myBuilderFunc = sinon.stub().callsFake(x => x)
+      const ormQuery = ormQueryBuilderFlow([myBuilderFunc])
+      const actual = myBuilderFunc.getCall(0).args[0]
+      assert.isOk(actual.compile)
+    })
+  })
+  describe('#queryBuilderPropertyFlowFunc()', () => {
+    it('should find the key in the passed in filters, and use it in the builder', () => {
+      const mockBuilder = {
+        property: sinon.stub(),
+      }
+      const instance = queryBuilderPropertyFlowFunc({ myKey: 'myValue' })(
+        'myKey'
+      )(mockBuilder as unknown as OrmQueryBuilder)
+      const actual = mockBuilder.property.getCall(0).args
+      const expected = ['myKey', 'myValue', undefined]
+      assert.deepEqual(actual, expected)
+    })
+    it('should not find the key in the passed in filters, and never call the builder', () => {
+      const mockBuilder = {
+        property: sinon.stub(),
+      }
+      const instance = queryBuilderPropertyFlowFunc({ anotherKey: 'myValue' })(
+        'myKey'
+      )(mockBuilder as unknown as OrmQueryBuilder)
+      assert.isFalse(mockBuilder.property.called)
+    })
+    it('should find the key in the passed in filters, and pass in the options into the builder', () => {
+      const mockBuilder = {
+        property: sinon.stub(),
+      }
+      const instance = queryBuilderPropertyFlowFunc({ myKey: 'myValue' })(
+        'myKey',
+        { startsWith: true }
+      )(mockBuilder as unknown as OrmQueryBuilder)
+      const actual = mockBuilder.property.getCall(0).args
+      const expected = ['myKey', 'myValue', { startsWith: true }]
+      assert.deepEqual(actual, expected)
+    })
+  })
   describe('#ormQueryBuilder()', () => {
     describe('#property()', () => {
       it('should throw an exception if an unknown equality symbol is passed in', () => {

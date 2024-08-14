@@ -1,4 +1,6 @@
 import merge from 'lodash/merge'
+import get from 'lodash/get'
+import flow from 'lodash/flow'
 import {
   OrmQuery,
   OrmQueryStatement,
@@ -11,6 +13,8 @@ import {
   AndStatement,
   OrStatement,
   OrmQueryBuilder,
+  BuilderFlowFunction,
+  PropertyOptions,
 } from './interfaces'
 import {
   EQUALITY_SYMBOLS,
@@ -91,7 +95,7 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
       endsWith = false,
       type = ORMType.string,
       equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
-    } = {}
+    }: PropertyOptions = {}
   ) => {
     if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
       throw new Error(`${equalitySymbol} is not a valid symbol`)
@@ -181,4 +185,20 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
   return builder
 }
 
-export { ormQueryBuilder }
+const queryBuilderPropertyFlowFunc =
+  (filters: object) =>
+  (key: string, options?: PropertyOptions) =>
+  (builder: OrmQueryBuilder): OrmQueryBuilder => {
+    if (key in filters) {
+      return builder.property(key, get(filters, key), options)
+    }
+    return builder
+  }
+
+const ormQueryBuilderFlow = (
+  flowFunctions: BuilderFlowFunction[]
+): OrmQuery => {
+  return flow(flowFunctions)(ormQueryBuilder()).compile()
+}
+
+export { ormQueryBuilder, queryBuilderPropertyFlowFunc, ormQueryBuilderFlow }

@@ -352,6 +352,16 @@ type OrmQueryBuilder = Readonly<{
   or: () => OrmQueryBuilder
 }>
 
+type PropertyOptions = {
+  caseSensitive?: boolean
+  startsWith?: boolean
+  endsWith?: boolean
+  type?: ORMType
+  equalitySymbol?: EQUALITY_SYMBOLS
+}
+
+type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
+
 export {
   OrmQuery,
   OrmQueryStatement,
@@ -379,4 +389,6 @@ export {
   EQUALITY_SYMBOLS,
   ORMType,
   ALLOWABLE_EQUALITY_SYMBOLS,
+  PropertyOptions,
+  BuilderFlowFunction,
 }
