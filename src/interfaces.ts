@@ -13,6 +13,7 @@ import {
   CreateParams,
   ValidatorConfiguration,
   TypedJsonObj,
+  ModelFetcher,
 } from 'functional-models/interfaces'
 
 enum EQUALITY_SYMBOLS {
@@ -362,6 +363,16 @@ type PropertyOptions = {
 
 type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
 
+type Orm = {
+  Model: OrmModelFactory
+  /**
+   * @deprecated Use Model} instead.
+   */
+  BaseModel: OrmModelFactory
+  fetcher: ModelFetcher
+  datastoreProvider: DatastoreProvider
+}
+
 export {
   OrmQuery,
   OrmQueryStatement,
@@ -391,4 +402,5 @@ export {
   ALLOWABLE_EQUALITY_SYMBOLS,
   PropertyOptions,
   BuilderFlowFunction,
+  Orm,
 }

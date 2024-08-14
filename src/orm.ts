@@ -23,6 +23,7 @@ import {
   SaveOverride,
   DeleteOverride,
   OrmModelOptions,
+  Orm,
 } from './interfaces'
 import { ormQueryBuilder } from './ormQuery'
 
@@ -34,7 +35,7 @@ const orm = ({
 }: Readonly<{
   datastoreProvider: DatastoreProvider
   BaseModel?: ModelFactory
-}>) => {
+}>): Orm => {
   if (!datastoreProvider) {
     throw new Error(`Must include a datastoreProvider`)
   }
