@@ -339,6 +339,7 @@ const orm = ({
   }
 
   return {
+    Model: ThisModel,
     BaseModel: ThisModel,
     fetcher,
     datastoreProvider,
