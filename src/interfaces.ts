@@ -312,6 +312,10 @@ type OrmValidatorConfiguration = Readonly<{
   ValidatorConfiguration
 
 type OrmQueryBuilder = Readonly<{
+  /*TODO:
+  In the next major iteration we need to add the concept of a complexStatement()
+  A complex statement allows for nested AND/OR statements.
+  */
   compile: () => OrmQuery
   datesAfter: (
     key: string,
@@ -373,6 +377,11 @@ type Orm = {
   datastoreProvider: DatastoreProvider
 }
 
+type BooleanChains = Readonly<{
+  ands: (PropertyStatement | DatesBeforeStatement | DatesAfterStatement)[]
+  orChains: PropertyStatement[][]
+}>
+
 export {
   OrmQuery,
   OrmQueryStatement,
@@ -403,4 +412,5 @@ export {
   PropertyOptions,
   BuilderFlowFunction,
   Orm,
+  BooleanChains,
 }

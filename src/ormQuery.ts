@@ -15,6 +15,7 @@ import {
   OrmQueryBuilder,
   BuilderFlowFunction,
   PropertyOptions,
+  BooleanChains,
 } from './interfaces'
 import {
   EQUALITY_SYMBOLS,
@@ -201,4 +202,169 @@ const ormQueryBuilderFlow = (
   return flow(flowFunctions)(ormQueryBuilder()).compile()
 }
 
-export { ormQueryBuilder, queryBuilderPropertyFlowFunc, ormQueryBuilderFlow }
+type _BuildingBooleanChains = Readonly<{
+  ands: (PropertyStatement | DatesBeforeStatement | DatesAfterStatement)[]
+  orChains: PropertyStatement[][]
+  currentOrChain?: PropertyStatement[]
+}>
+
+const isPropertyType = (value: string | undefined) => {
+  if (!value) {
+    return false
+  }
+  return (
+    value === 'property' || value === 'datesBefore' || value === 'datesAfter'
+  )
+}
+
+const isBooleanType = (value: string) => {
+  return value === 'and' || value === 'or'
+}
+
+const createBooleanChains = (ormQuery: OrmQuery): BooleanChains => {
+  /*
+Cases:
+PROPERTY NOW
+-None Before
+-- None After: combine and quit
+-- Property After: combine and move on.
+-- Boolean After:_
+--- AND After: combine and move on.
+--- OR After: start an or chain, put it in, move on.
+
+-Property Before
+-- None After: combine and quit.
+-- Property After: combine and move on.
+-- Boolean After:_
+--- AND After: combine and move on.
+--- OR After: start an or chain, put it in, move on.
+
+-AND Before
+-- None After: combine and move on.
+-- Property After: combine and move on.
+-- Boolean After:_
+--- AND After: combine and move on.
+--- OR After: Start an or chain, and put it in.
+
+-OR Before
+-- Property After: Put into OR chain, move current into OR chain, continue.
+-- Boolean After:_
+--- AND After: Put into OR chain, END chain, and continue.
+--- OR After: Put into OR chain, continue.
+
+BOOLEAN NOW
+- None before: Explode
+- None after: Explode
+- Property Before: Move on, already handled
+- Boolean before: Explode
+ */
+  const statementsThatMatter = ormQuery.chain.filter(statement => {
+    const type = statement.type
+    return (
+      type === 'property' ||
+      type === 'datesBefore' ||
+      type === 'datesAfter' ||
+      type === 'or' ||
+      type === 'and'
+    )
+  })
+
+  const result = statementsThatMatter.reduce(
+    (acc, statement, index, array) => {
+      const currentType = statement.type
+      const previousType = index === 0 ? undefined : array[index - 1].type
+      const afterType = array[index + 1] ? array[index + 1].type : undefined
+
+      // This is a boolean statement?
+      if (isBooleanType(currentType)) {
+        if (previousType === undefined || afterType === undefined) {
+          throw new Error('Cannot start or end a query with a boolean')
+        }
+        if (isBooleanType(afterType)) {
+          throw new Error('Cannot have two booleans back to back.')
+        }
+      }
+      // This is a property statement?
+      if (isPropertyType(currentType)) {
+        // Are we continuing an or chain???
+        if (previousType === 'or') {
+          /* istanbul ignore next */
+          if (!acc.currentOrChain) {
+            /* istanbul ignore next */
+            throw new Error(
+              'Impossible situation where currentOrChain hasnt been set'
+            )
+          }
+          // Are we going to end this chain now?
+          if (afterType !== 'or') {
+            const newOrChains = [
+              ...acc.orChains,
+              [...acc.currentOrChain, statement],
+            ]
+            return {
+              ands: acc.ands,
+              orChains: newOrChains,
+              currentOrChain: undefined,
+            } as _BuildingBooleanChains
+          }
+          return {
+            ands: acc.ands,
+            orChains: acc.orChains,
+            currentOrChain: [...acc.currentOrChain, statement],
+          } as _BuildingBooleanChains
+        }
+        // Are we starting a new OR chain??
+        if (afterType === 'or') {
+          return {
+            ands: acc.ands,
+            orChains: acc.orChains, // we are starting, so it doesn't go here.
+            currentOrChain: [statement],
+          } as _BuildingBooleanChains
+        }
+        // Normal AND property situations
+        // Ignore, because istanbul complains about no ELSE.
+        /* istanbul ignore next */
+        if (
+          isPropertyType(afterType) ||
+          afterType === undefined ||
+          afterType === 'and'
+        ) {
+          // Regardless of what happens, we need to end any OR chains.
+          /* istanbul ignore next */
+          const orChains = acc.currentOrChain
+            ? // currentOrChain should never be empty
+              /* istanbul ignore next */
+              [...acc.orChains, acc.currentOrChain]
+            : acc.orChains
+          // This is always an AND, then move on.
+          return {
+            ands: [...acc.ands, statement],
+            orChains: orChains,
+            currentOrChain: undefined,
+          } as _BuildingBooleanChains
+        }
+      }
+      // Standard unknown passthrough case. If its not a property type we should move on...
+      // This should never happen.
+      /* istanbul ignore next */
+      return acc
+    },
+    {
+      ands: [],
+      orChains: [],
+      currentOrChain: undefined,
+    } as _BuildingBooleanChains
+  )
+
+  return {
+    ands: result.ands,
+    orChains: result.orChains,
+  } as BooleanChains
+}
+
+export {
+  ormQueryBuilder,
+  queryBuilderPropertyFlowFunc,
+  ormQueryBuilderFlow,
+  createBooleanChains,
+}

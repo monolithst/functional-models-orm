@@ -6,6 +6,7 @@ import {
   ormQueryBuilder,
   queryBuilderPropertyFlowFunc,
   ormQueryBuilderFlow,
+  createBooleanChains,
 } from '../../src/ormQuery'
 import {
   OrmQueryStatement,
@@ -15,6 +16,7 @@ import {
   DatesAfterStatement,
   DatesBeforeStatement,
   OrmQueryBuilder,
+  BooleanChains,
 } from '../../src/interfaces'
 import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
 
@@ -69,6 +71,252 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
   },
 }
 describe('/src/ormQuery.ts', () => {
+  describe('#createBooleanChains()', () => {
+    it('should find 3 and statements when only properties are used', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .property('b', 2)
+        .property('c', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [
+          input.properties.a,
+          input.properties.b,
+          input.properties.c,
+        ] as PropertyStatement[],
+        orChains: [] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should find 3 and statements when only properties are used separated by ands()', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .and()
+        .property('b', 2)
+        .and()
+        .property('c', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [
+          input.properties.a,
+          input.properties.b,
+          input.properties.c,
+        ] as PropertyStatement[],
+        orChains: [] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should throw an exception if and() starts the orm query', () => {
+      assert.throws(() => {
+        const input = ormQueryBuilder()
+          .and()
+          .property('a', 1)
+          .and()
+          .property('b', 2)
+          .and()
+          .property('c', 3)
+          .compile()
+        return createBooleanChains(input)
+      })
+    })
+    it('should throw an exception if or() starts the orm query', () => {
+      assert.throws(() => {
+        const input = ormQueryBuilder()
+          .or()
+          .property('a', 1)
+          .and()
+          .property('b', 2)
+          .and()
+          .property('c', 3)
+          .compile()
+        return createBooleanChains(input)
+      })
+    })
+    it('should throw an exception if two and() are together', () => {
+      assert.throws(() => {
+        const input = ormQueryBuilder()
+          .property('a', 1)
+          .and()
+          .and()
+          .property('b', 2)
+          .and()
+          .property('c', 3)
+          .compile()
+        return createBooleanChains(input)
+      })
+    })
+    it('should throw an exception if two or() are together', () => {
+      assert.throws(() => {
+        const input = ormQueryBuilder()
+          .property('a', 1)
+          .or()
+          .or()
+          .property('b', 2)
+          .and()
+          .property('c', 3)
+          .compile()
+        return createBooleanChains(input)
+      })
+    })
+    it('should find 1 AND statement and 1 OR statement', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .and()
+        .property('b', 2)
+        .or()
+        .property('c', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [input.properties.a] as PropertyStatement[],
+        orChains: [
+          [input.properties.b, input.properties.c],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should find 1 AND statement and 1 OR statement, when no AND statements are used', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .property('b', 2)
+        .or()
+        .property('c', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [input.properties.a] as PropertyStatement[],
+        orChains: [
+          [input.properties.b, input.properties.c],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should find 3 AND statement and 2 OR statement', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .property('b', 2)
+        .or()
+        .property('c', 3)
+        .property('d', 1)
+        .property('e', 2)
+        .or()
+        .property('f', 3)
+        .property('g', 1)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [
+          input.properties.a,
+          input.properties.d,
+          input.properties.g,
+        ] as PropertyStatement[],
+        orChains: [
+          [input.properties.b, input.properties.c],
+          [input.properties.e, input.properties.f],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should find 1 AND statement and 1 OR statement containing 4 statements', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .or()
+        .property('b', 2)
+        .or()
+        .property('c', 3)
+        .or()
+        .property('d', 4)
+        .property('e', 5)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [input.properties.e] as PropertyStatement[],
+        orChains: [
+          [
+            input.properties.a,
+            input.properties.b,
+            input.properties.c,
+            input.properties.d,
+          ],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should create two OR statements with 2 statements each', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .or()
+        .property('b', 2)
+        .property('c', 1)
+        .or()
+        .property('d', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [] as PropertyStatement[],
+        orChains: [
+          [input.properties.a, input.properties.b],
+          [input.properties.c, input.properties.d],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should create two OR statements with 2 statements each, with 1 and statement', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .or()
+        .property('b', 2)
+        .property('z', 1)
+        .property('c', 1)
+        .or()
+        .property('d', 3)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [input.properties.z] as PropertyStatement[],
+        orChains: [
+          [input.properties.a, input.properties.b],
+          [input.properties.c, input.properties.d],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+    it('should find 4 AND statement and 2 OR statements containing 2 and 3 statements, when full complexity is present', () => {
+      const input = ormQueryBuilder()
+        .property('a', 1)
+        .or()
+        .property('b', 2)
+        .and()
+        .property('c', 1)
+        .and()
+        .property('d', 1)
+        .and()
+        .property('e', 1)
+        .or()
+        .property('f', 3)
+        .or()
+        .property('g', 4)
+        .property('h', 5)
+        .property('i', 5)
+        .compile()
+      const actual = createBooleanChains(input)
+      const expected = {
+        ands: [
+          input.properties.c,
+          input.properties.d,
+          input.properties.h,
+          input.properties.i,
+        ] as PropertyStatement[],
+        orChains: [
+          [input.properties.a, input.properties.b],
+          [input.properties.e, input.properties.f, input.properties.g],
+        ] as readonly PropertyStatement[][],
+      } as BooleanChains
+      assert.deepEqual(actual, expected)
+    })
+  })
   describe('#ormQueryBuilderFlow()', () => {
     it('should return a orm query even when called with an empty array', () => {
       const ormQuery = ormQueryBuilderFlow([])

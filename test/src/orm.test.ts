@@ -209,7 +209,7 @@ describe('/src/orm.ts', () => {
               lastModified: new Date('2021-01-01T00:00:01Z'),
             })
             const newModel = await modelInstance.save()
-            const actual = (await newModel.get.lastModified()).toISOString()
+            const actual = await newModel.get.lastModified()
             const expected = '2021-01-01T00:00:01Z'
             // @ts-ignore
             assert.notEqual(actual, expected)
