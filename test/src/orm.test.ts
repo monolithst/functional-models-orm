@@ -343,6 +343,7 @@ describe('/src/orm.ts', () => {
         // @ts-ignore
         const instance = orm({ datastoreProvider, BaseModel })
         const model = instance.BaseModel<{}>('MyModel', { properties: {} }, {})
+        // @ts-ignore
         await instance.fetcher(model, 'my-id')
 
         const actual = datastoreProvider.retrieve.getCall(0).args
