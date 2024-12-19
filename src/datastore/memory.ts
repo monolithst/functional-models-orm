@@ -4,9 +4,9 @@ import flatten from 'lodash/flatten'
 import get from 'lodash/get'
 import orderBy from 'lodash/orderBy'
 /* eslint-disable import/no-duplicates */
-import isBefore from 'date-fns/isBefore'
-import isAfter from 'date-fns/isAfter'
-import isEqual from 'date-fns/isEqual'
+import { isBefore } from 'date-fns/isBefore'
+import { isAfter } from 'date-fns/isAfter'
+import { isEqual } from 'date-fns/isEqual'
 /* eslint-enable import/no-duplicates */
 import {
   FunctionalModel,
