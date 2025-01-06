@@ -8,5 +8,6 @@ import * as interfaces from './interfaces'
 export * from './ormQuery'
 export * from './interfaces'
 export * from './properties'
+export { create as createNoopDatastoreProvider } from './datastore/noop'
 
 export { interfaces, orm, ormQuery, datastore, validation, properties }
