@@ -1,20 +1,18 @@
 import {
   Arrayable,
-  FunctionalValue,
+  DataValue,
   Maybe,
   ModelInstance,
-  Model,
-  FunctionalModel,
+  ModelType,
+  DataDescription,
   PrimaryKeyType,
-  ModelDefinition,
-  OptionalModelOptions,
-  ModelOptions,
   PropertyConfig,
-  CreateParams,
-  ValidatorConfiguration,
-  TypedJsonObj,
-  ModelFetcher,
-} from 'functional-models/interfaces'
+  ValidatorContext,
+  ToObjectResult,
+  ModelInstanceFetcher,
+  ModelFactory,
+  PropertyType,
+} from 'functional-models'
 
 enum EQUALITY_SYMBOLS {
   EQUALS = '=',
@@ -35,181 +33,230 @@ enum ORMType {
 const ALLOWABLE_EQUALITY_SYMBOLS = Object.values(EQUALITY_SYMBOLS)
 
 type SaveMethod<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> = (instance: TModelInstance) => Promise<TModelInstance>
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = <TData extends DataDescription>(
+  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+) => Promise<
+  OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+>
+
 type DeleteMethod<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> = (instance: TModelInstance) => Promise<void>
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = <TData extends DataDescription>(
+  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+) => Promise<void>
+
 type SaveOverride<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> = (
-  existingSave: SaveMethod<T, TModel, TModelInstance>,
-  instance: TModelInstance
-) => Promise<TModelInstance>
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = <TData extends DataDescription>(
+  existingSave: SaveMethod<TModelExtensions, TModelInstanceExtensions>,
+  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+) => Promise<
+  OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+>
+
 type DeleteOverride<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> = (
-  existingDelete: DeleteMethod<T, TModel, TModelInstance>,
-  instance: TModelInstance
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = <TData extends DataDescription>(
+  existingDelete: DeleteMethod<TModelExtensions, TModelInstanceExtensions>,
+  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 ) => Promise<void>
 
 type OrmSearchResult<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
+  TData extends DataDescription,
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
 > = Readonly<{
-  instances: readonly TModelInstance[]
+  instances: readonly OrmModelInstance<
+    TData,
+    TModelExtensions,
+    TModelInstanceExtensions
+  >[]
   page?: any
 }>
 
-type OrmOptionalModelOptions<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> =
-  | (OptionalModelOptions<T> &
-      Readonly<{
-        save?: SaveOverride<T, TModel, TModelInstance>
-        delete?: DeleteOverride<T, TModel, TModelInstance>
-        uniqueTogether?: readonly string[]
-        [s: string]: any
-      }>)
-  | undefined
-
-type OrmModelOptions<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
-> =
-  | (ModelOptions<T> &
-      Readonly<{
-        save?: SaveOverride<T, TModel, TModelInstance>
-        delete?: DeleteOverride<T, TModel, TModelInstance>
-        [s: string]: any
-      }>)
-  | undefined
-
-type OrmModelFactory = <
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
->(
-  modelName: string,
-  keyToProperty: ModelDefinition<T, TModel>,
-  options?: OrmOptionalModelOptions<T, TModel, TModelInstance>
-) => OrmModel<T>
-
-type DatastoreSearchResult<T extends FunctionalModel> = Readonly<{
-  instances: readonly TypedJsonObj<T>[]
-  page?: any
+type OrmModelOptionsExtensions<
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = Readonly<{
+  save?: SaveOverride<TModelExtensions, TModelInstanceExtensions>
+  delete?: DeleteOverride<TModelExtensions, TModelInstanceExtensions>
+  uniqueTogether?: readonly string[]
 }>
 
-type OrmModel<T extends FunctionalModel> = Readonly<{
-  save: (instance: OrmModelInstance<T>) => Promise<OrmModelInstance<T>>
-  delete: (instance: OrmModelInstance<T>) => Promise<void>
-  retrieve: (primaryKey: PrimaryKeyType) => Promise<Maybe<OrmModelInstance<T>>>
-  search: (query: OrmQuery) => Promise<OrmSearchResult<T, OrmModel<T>>>
-  searchOne: (query: OrmQuery) => Promise<OrmModelInstance<T> | undefined>
-  createAndSave: (data: OrmModelInstance<T>) => Promise<OrmModelInstance<T>>
-  bulkInsert: (instances: readonly OrmModelInstance<T>[]) => Promise<void>
-  create: (data: CreateParams<T>) => OrmModelInstance<T>
-  getModelDefinition: () => ModelDefinition<T, OrmModel<T>>
+type OrmModelExtensions<
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = Readonly<{
+  save: <TData extends DataDescription>(
+    instance: OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >
+  ) => Promise<
+    OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  >
+  delete: <TData extends DataDescription>(
+    instance: OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >
+  ) => Promise<void>
+  retrieve: <TData extends DataDescription>(
+    primaryKey: PrimaryKeyType
+  ) => Promise<
+    Maybe<OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>>
+  >
+  search: <TData extends DataDescription>(
+    query: OrmQuery
+  ) => Promise<
+    OrmSearchResult<
+      TData,
+      OrmModel<TData, TModelExtensions, TModelInstanceExtensions>
+    >
+  >
+  searchOne: <TData extends DataDescription>(
+    query: OrmQuery
+  ) => Promise<
+    | OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+    | undefined
+  >
+  createAndSave: <TData extends DataDescription>(
+    data: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  ) => Promise<
+    OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  >
+  bulkInsert: <TData extends DataDescription>(
+    instances: readonly OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >[]
+  ) => Promise<void>
   count: () => Promise<number>
-}> &
-  Model<T>
+}>
 
-type OrmModelInstance<
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-> = {
-  // eslint-disable-next-line functional/prefer-readonly-type
-  save: () => Promise<OrmModelInstance<T, TModel>>
-  // eslint-disable-next-line functional/prefer-readonly-type
+type OrmModelInstanceExtensions<
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = Readonly<{
+  save: <TData extends DataDescription>() => Promise<
+    OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  >
   delete: () => Promise<void>
-  readonly methods: Readonly<{
+  methods: Readonly<{
     isDirty: () => boolean
   }>
-} & ModelInstance<T, TModel> &
-  ModelInstance<T>
+}>
+
+type OrmModelFactory<
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+  TModelOptionsExtensions extends object = object,
+> = ModelFactory<
+  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
+  OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>,
+  OrmModelOptionsExtensions<TModelOptionsExtensions>
+>
+
+type DatastoreSearchResult<T extends DataDescription> = Readonly<{
+  instances: readonly ToObjectResult<T>[]
+  page?: any
+}>
+
+type OrmModel<
+  TData extends DataDescription,
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = ModelType<
+  TData,
+  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>
+>
+
+type OrmModelInstance<
+  TData extends DataDescription,
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+> = ModelInstance<
+  TData,
+  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
+  OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>
+>
 
 type DatastoreProvider = Readonly<{
   save: <
-    T extends FunctionalModel,
-    TModel extends Model<T> = OrmModel<T>,
-    TModelInstance extends ModelInstance<T, TModel> = ModelInstance<T, TModel>,
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
   >(
-    instance: TModelInstance
-  ) => Promise<TypedJsonObj<T>>
+    instance: OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >
+  ) => Promise<ToObjectResult<TData>>
   delete: <
-    T extends FunctionalModel,
-    TModel extends Model<T> = OrmModel<T>,
-    TModelInstance extends ModelInstance<T, TModel> = ModelInstance<T, TModel>,
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
   >(
-    instance: TModelInstance
+    instance: OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >
   ) => Promise<void>
-  retrieve: <T extends FunctionalModel>(
-    model: OrmModel<T>,
-    primaryKey: PrimaryKeyType
-  ) => Promise<Maybe<TypedJsonObj<T>>>
-  search: <T extends FunctionalModel>(
-    model: OrmModel<T>,
-    query: OrmQuery
-  ) => Promise<DatastoreSearchResult<T>>
-  bulkInsert?: <
-    T extends FunctionalModel,
-    TModel extends OrmModel<T> = OrmModel<T>,
-    TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-      T,
-      TModel
-    >,
+  retrieve: <
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
   >(
-    model: TModel,
-    instances: readonly TModelInstance[]
+    model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>,
+    primaryKey: PrimaryKeyType
+  ) => Promise<Maybe<ToObjectResult<TData>>>
+  search: <
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>,
+    query: OrmQuery
+  ) => Promise<DatastoreSearchResult<TData>>
+  bulkInsert?: <
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>,
+    instances: readonly OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >[]
   ) => Promise<void>
   createAndSave?: <
-    T extends FunctionalModel,
-    TModel extends OrmModel<T> = OrmModel<T>,
-    TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-      T,
-      TModel
-    >,
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
   >(
-    instance: TModelInstance
-  ) => Promise<TypedJsonObj<T>>
-  count?: <T extends FunctionalModel, TModel extends OrmModel<T> = OrmModel<T>>(
-    model: TModel
+    instance: OrmModelInstance<
+      TData,
+      TModelExtensions,
+      TModelInstanceExtensions
+    >
+  ) => Promise<ToObjectResult<TData>>
+  count?: <
+    TData extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>
   ) => Promise<number>
 }>
 
@@ -289,6 +336,194 @@ type OrmQuery = Readonly<{
   chain: readonly OrmQueryStatement[]
 }>
 
+type OrChain = {}
+
+type LinkStatement = {
+  statements: OrmQueryStatement[]
+  link: 'and' | 'or'
+}
+
+/*
+Situations
+
+[a=true]
+[a=true and b=true]
+[a=true or b=true]
+[a=[b=true or c=true] and d=[e=true and f=true]]
+
+And statement always first.
+
+Rules:
+Overall object is an array.
+
+Arrays Must:
+Be All statements (Ands)
+Be Statements separated by and/or
+Cannot end with and/or
+Cannot have two and/or in a row.
+
+Each spot can be...
+An array
+A statement
+And/OR
+
+
+
+[
+  [s1 'and' s2], 'and', [[s3 and s4], 'or', [s3 and s5], 'or' [s4 'or' s5]]
+]
+
+
+ */
+type S = OrmQueryStatement
+type E = 'AND' | 'OR'
+type Tokens = Tokens[] | S | E
+
+type OverallQuery = Tokens[]
+
+const fu = (o: OverallQuery) => {}
+const property = (
+  name: string,
+  value: any,
+  {
+    caseSensitive = false,
+    startsWith = false,
+    endsWith = false,
+    type = ORMType.string,
+    equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
+  }: PropertyOptions = {}
+) => {
+  if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
+    throw new Error(`${equalitySymbol} is not a valid symbol`)
+  }
+  if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type === ORMType.string) {
+    throw new Error(`Cannot use a non = symbol for a string type`)
+  }
+  if (!type) {
+    type = ORMType.string
+  }
+
+  const propertyEntry: PropertyStatement = {
+    type: 'property',
+    name,
+    value,
+    valueType: type,
+    options: {
+      caseSensitive,
+      startsWith,
+      endsWith,
+      equalitySymbol,
+    },
+  }
+  return propertyEntry
+}
+
+/*
+
+[
+  [s1 'and' s2], 'and', [[s3 and s4], 'or', [s3 and s5], 'or' [s4 'or' s5]]
+]
+
+ */
+fu([
+  [property('s1', 'abc'), 'AND', property('s2', 'cbd')],
+  'AND',
+  [
+    [property('s3', '123'), 'AND', property('s4', 'abc')],
+    'OR',
+    [property('s3', '123'), 'AND', property('s5', '098')],
+    'OR',
+    [property('s4', 'abc'), 'AND', property('s5', '098')],
+  ],
+])
+
+const processMongoArray = (o: Tokens[]): { $and: any } => {
+  // If we don't have any AND/OR its all an AND
+  if (o.find(x => x === 'AND' || x === 'OR')) {
+    // All ANDS
+    return {
+      $and: o.map(handleMongoQuery),
+    }
+  }
+  const first = o[0]
+  if (first === 'AND' || first === 'OR') {
+    throw new Error('Cannot have AND or OR at the very start.')
+  }
+  const last = o[o.length - 1]
+  if (last === 'AND' || last === 'OR') {
+    throw new Error('Cannot have AND or OR at the very end.')
+  }
+  const totalLinks = o.filter(x => x === 'AND' || x === 'OR')
+  if (totalLinks.length !== o.length - 1) {
+    throw new Error('Must separate each statement with an AND or OR')
+  }
+  const threes = threeitize(o)
+  const allAndStatements = threes.map(([a, l, b]) => {
+    if (l !== 'AND' && l !== 'OR') {
+      throw new Error(`${l} is not a valid symbol`)
+    }
+    const aQuery = handleMongoQuery(a)
+    const bQuery = handleMongoQuery(b)
+    return {
+      [`$${l.toLowerCase()}`]: [aQuery, bQuery],
+    }
+  })
+  return {
+    $and: allAndStatements,
+  }
+}
+
+const doProperty = (p: PropertyStatement) => {
+  return {
+    [p.name]: p.value,
+  }
+}
+
+const handleMongoQuery = (o: Tokens) => {
+  if (Array.isArray(o)) {
+    return processMongoArray(o)
+  }
+  if (o === 'AND' || o === 'OR') {
+    throw new Error(``)
+  }
+  if (o.type === 'property') {
+    return doProperty(o)
+  }
+  throw new Error('Unhandled currently')
+}
+
+const mongoMatch = (o: OverallQuery) => {
+  return {
+    $match: handleMongoQuery(o),
+  }
+}
+
+const threeitize = <T>(data: T[]): T[][] => {
+  if (data.length === 0 || data.length === 1) {
+    return []
+  }
+  if (data.length < 3) {
+    throw new Error('Must include at least 3 items')
+  }
+  const three = data.slice(0, 3)
+  const rest = data.slice(2)
+  const moreThrees = threeitize(rest)
+  return [three, ...moreThrees]
+}
+
+type QueryStatement = {
+  andStatements: QueryStatement[]
+  orStatements: QueryStatement[]
+  thisStatement: OrmQueryStatement
+}
+
+type OrmQuery2 = Readonly<{
+  andStatements: QueryStatement[]
+  sort?: SortStatement
+  take?: TakeValue
+  page?: PageValue
+}>
+
 type OrmQueryStatement =
   | DatesAfterStatement
   | DatesBeforeStatement
@@ -299,17 +534,16 @@ type OrmQueryStatement =
   | AndStatement
   | OrStatement
 
-type OrmPropertyConfig<T extends Arrayable<FunctionalValue>> =
-  PropertyConfig<T> &
-    Readonly<{
-      unique?: string
-      [s: string]: any
-    }>
+type OrmPropertyConfig<T extends Arrayable<DataValue>> = PropertyConfig<T> &
+  Readonly<{
+    unique?: string
+    [s: string]: any
+  }>
 
-type OrmValidatorConfiguration = Readonly<{
+type OrmValidatorContext = Readonly<{
   noOrmValidation?: boolean
 }> &
-  ValidatorConfiguration
+  ValidatorContext
 
 type OrmQueryBuilder = Readonly<{
   /*TODO:
@@ -369,11 +603,7 @@ type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
 
 type Orm = {
   Model: OrmModelFactory
-  /**
-   * @deprecated Use Model} instead.
-   */
-  BaseModel: OrmModelFactory
-  fetcher: ModelFetcher
+  fetcher: ModelInstanceFetcher
   datastoreProvider: DatastoreProvider
 }
 
@@ -396,14 +626,13 @@ export {
   OrmModel,
   OrmModelInstance,
   DatastoreProvider,
-  OrmOptionalModelOptions,
+  OrmModelOptions,
   OrmModelFactory,
   SaveOverride,
   DeleteOverride,
-  OrmModelOptions,
   OrmPropertyConfig,
   DatastoreSearchResult,
-  OrmValidatorConfiguration,
+  OrmValidatorContext,
   OrmQueryBuilder,
   OrmSearchResult,
   EQUALITY_SYMBOLS,

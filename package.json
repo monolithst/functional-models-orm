@@ -1,6 +1,6 @@
 {
   "name": "functional-models-orm",
-  "version": "2.1.13",
+  "version": "3.0.0",
   "description": "A basic ORM building library using the functional-models library.",
   "main": "index.js",
   "types": "index.d.ts",
@@ -64,6 +64,9 @@
     "url": "https://github.com/monolithst/functional-models-orm/issues"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.2.0",
+    "@eslint/eslintrc": "^3.1.0",
+    "@eslint/js": "^9.12.0",
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
     "@types/chai": "^4.3.0",
     "@types/chai-as-promised": "^7.1.8",
@@ -71,18 +74,17 @@
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.7",
     "@types/sinon": "^10.0.6",
-    "@typescript-eslint/eslint-plugin": "^6.3.0",
-    "@typescript-eslint/parser": "^6.3.0",
-    "babel-eslint": "^10.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
     "chai": "^4.3.0",
     "chai-as-promised": "^7.1.2",
     "cucumber": "^6.0.7",
     "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.46.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-import-resolver-typescript": "^3.6.0",
-    "eslint-plugin-functional": "^6.0.0",
-    "eslint-plugin-import": "^2.28.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-import-resolver-typescript": "^3.6.3",
+    "eslint-plugin-functional": "~7.1.0",
+    "eslint-plugin-import": "^2.31.0",
     "mocha": "^10.4.0",
     "nodemon": "^3.1.0",
     "nyc": "^17.1.0",
@@ -97,7 +99,7 @@
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
     "date-fns": "^3.6.0",
-    "functional-models": "^2.1.14",
+    "functional-models": "^3.0.1",
     "lodash": "^4.17.21"
   }
 }
