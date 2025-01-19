@@ -1,18 +1,23 @@
 import merge from 'lodash/merge'
 import identity from 'lodash/identity'
-import { AdvancedModelReferenceProperty, DateProperty } from 'functional-models'
 import {
+  AdvancedModelReferenceProperty,
+  DatetimeProperty,
+  DateValueType,
   PropertyConfig,
-  Maybe,
   Arrayable,
-  FunctionalValue,
-  FunctionalModel,
-  ModelReference,
-  PropertyModifier,
-} from 'functional-models/interfaces'
+  DataValue,
+  DataDescription,
+  ModelReferenceType,
+} from 'functional-models'
 
 import { unique, uniqueTogether } from './validation'
-import { OrmModel, OrmPropertyConfig } from './interfaces'
+import {
+  OrmModel,
+  OrmModelExtensions,
+  OrmModelInstanceExtensions,
+  OrmPropertyConfig,
+} from './types'
 
 const _defaultPropertyConfig = {
   unique: undefined,
@@ -20,23 +25,27 @@ const _defaultPropertyConfig = {
 }
 
 const LastModifiedDateProperty = (
-  config: PropertyConfig<Maybe<string | Date>> = {}
+  config: PropertyConfig<DateValueType> = {}
 ) => {
   const additionalMetadata = { lastModifiedUpdateMethod: () => new Date() }
-  return DateProperty(config, additionalMetadata)
+  return DatetimeProperty(config, additionalMetadata)
 }
 
 const OrmModelReferenceProperty = <
-  T extends FunctionalModel,
-  TModifier extends PropertyModifier<ModelReference<T>> = PropertyModifier<
-    ModelReference<T>
-  >,
+  T extends DataDescription,
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
 >(
-  model: OrmModel<T>,
-  config?: PropertyConfig<TModifier>
-) => AdvancedModelReferenceProperty<T>(model as any, config as any)
+  model: OrmModel<T, TModelExtensions, TModelInstanceExtensions>,
+  config?: PropertyConfig<ModelReferenceType<any>>
+) =>
+  AdvancedModelReferenceProperty<
+    T,
+    OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
+    OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>
+  >(model, config)
 
-const ormPropertyConfig = <T extends Arrayable<FunctionalValue>>(
+const ormPropertyConfig = <T extends Arrayable<DataValue>>(
   config: OrmPropertyConfig<T> = _defaultPropertyConfig
 ): PropertyConfig<T> => {
   return merge(config, {

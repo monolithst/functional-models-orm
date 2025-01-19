@@ -16,12 +16,10 @@ import {
   BuilderFlowFunction,
   PropertyOptions,
   BooleanChains,
-} from './interfaces'
-import {
   EQUALITY_SYMBOLS,
   ORMType,
   ALLOWABLE_EQUALITY_SYMBOLS,
-} from './constants'
+} from './types'
 
 const compile = (queryData: readonly OrmQueryStatement[]) => (): OrmQuery => {
   // TODO: This does not handle AND/OR at all.

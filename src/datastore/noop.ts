@@ -1,4 +1,4 @@
-import { DatastoreProvider } from '../interfaces'
+import { DatastoreProvider } from '../types'
 
 const create = (): DatastoreProvider => {
   return {

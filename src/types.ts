@@ -6,12 +6,14 @@ import {
   ModelType,
   DataDescription,
   PrimaryKeyType,
+  MinimalModelDefinition,
   PropertyConfig,
   ValidatorContext,
   ToObjectResult,
   ModelInstanceFetcher,
   ModelFactory,
-  PropertyType,
+  ModelDefinition,
+  ModelFactoryOptions,
 } from 'functional-models'
 
 enum EQUALITY_SYMBOLS {
@@ -36,7 +38,7 @@ type SaveMethod<
   TModelExtensions extends object = object,
   TModelInstanceExtensions extends object = object,
 > = <TData extends DataDescription>(
-  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 ) => Promise<
   OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 >
@@ -45,7 +47,7 @@ type DeleteMethod<
   TModelExtensions extends object = object,
   TModelInstanceExtensions extends object = object,
 > = <TData extends DataDescription>(
-  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 ) => Promise<void>
 
 type SaveOverride<
@@ -53,7 +55,7 @@ type SaveOverride<
   TModelInstanceExtensions extends object = object,
 > = <TData extends DataDescription>(
   existingSave: SaveMethod<TModelExtensions, TModelInstanceExtensions>,
-  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 ) => Promise<
   OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 >
@@ -63,7 +65,7 @@ type DeleteOverride<
   TModelInstanceExtensions extends object = object,
 > = <TData extends DataDescription>(
   existingDelete: DeleteMethod<TModelExtensions, TModelInstanceExtensions>,
-  instance: OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
+  instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
 ) => Promise<void>
 
 type OrmSearchResult<
@@ -79,19 +81,19 @@ type OrmSearchResult<
   page?: any
 }>
 
-type OrmModelOptionsExtensions<
+type OrmModelFactoryOptionsExtensions<
   TModelExtensions extends object = object,
   TModelInstanceExtensions extends object = object,
 > = Readonly<{
   save?: SaveOverride<TModelExtensions, TModelInstanceExtensions>
   delete?: DeleteOverride<TModelExtensions, TModelInstanceExtensions>
-  uniqueTogether?: readonly string[]
 }>
 
 type OrmModelExtensions<
   TModelExtensions extends object = object,
   TModelInstanceExtensions extends object = object,
 > = Readonly<{
+  getOrmModelConfigurations: () => OrmModelConfigurations
   save: <TData extends DataDescription>(
     instance: OrmModelInstance<
       TData,
@@ -150,19 +152,43 @@ type OrmModelInstanceExtensions<
     OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
   >
   delete: () => Promise<void>
-  methods: Readonly<{
-    isDirty: () => boolean
-  }>
 }>
 
-type OrmModelFactory<
+type OrmModelFactory1<
   TModelExtensions extends object = object,
   TModelInstanceExtensions extends object = object,
   TModelOptionsExtensions extends object = object,
 > = ModelFactory<
   OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
   OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>,
-  OrmModelOptionsExtensions<TModelOptionsExtensions>
+  OrmModelFactoryOptionsExtensions<TModelOptionsExtensions>
+>
+
+type OrmModelConfigurations = Readonly<{
+  uniqueTogether?: readonly string[]
+}>
+
+type MinimumOrmModelDefinition<TData extends DataDescription> =
+  MinimalModelDefinition<TData> & OrmModelConfigurations
+
+type OrmModelFactory<
+  TModelExtensions extends object = object,
+  TModelInstanceExtensions extends object = object,
+  TModelOptionsExtensions extends object = object,
+> = <TData extends DataDescription>(
+  modelDef: MinimumOrmModelDefinition<TData>,
+  options?: ModelFactoryOptions<
+    TData,
+    OrmModelFactoryOptionsExtensions<
+      TModelExtensions,
+      TModelInstanceExtensions
+    > &
+      TModelOptionsExtensions
+  >
+) => ModelType<
+  TData,
+  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
+  OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>
 >
 
 type DatastoreSearchResult<T extends DataDescription> = Readonly<{
@@ -176,7 +202,8 @@ type OrmModel<
   TModelInstanceExtensions extends object = object,
 > = ModelType<
   TData,
-  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>
+  OrmModelExtensions<TModelExtensions, TModelInstanceExtensions>,
+  OrmModelInstanceExtensions<TModelExtensions, TModelInstanceExtensions>
 >
 
 type OrmModelInstance<
@@ -195,22 +222,14 @@ type DatastoreProvider = Readonly<{
     TModelExtensions extends object = object,
     TModelInstanceExtensions extends object = object,
   >(
-    instance: OrmModelInstance<
-      TData,
-      TModelExtensions,
-      TModelInstanceExtensions
-    >
+    instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
   ) => Promise<ToObjectResult<TData>>
   delete: <
     TData extends DataDescription,
     TModelExtensions extends object = object,
     TModelInstanceExtensions extends object = object,
   >(
-    instance: OrmModelInstance<
-      TData,
-      TModelExtensions,
-      TModelInstanceExtensions
-    >
+    instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
   ) => Promise<void>
   retrieve: <
     TData extends DataDescription,
@@ -234,7 +253,7 @@ type DatastoreProvider = Readonly<{
     TModelInstanceExtensions extends object = object,
   >(
     model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>,
-    instances: readonly OrmModelInstance<
+    instances: readonly ModelInstance<
       TData,
       TModelExtensions,
       TModelInstanceExtensions
@@ -245,11 +264,7 @@ type DatastoreProvider = Readonly<{
     TModelExtensions extends object = object,
     TModelInstanceExtensions extends object = object,
   >(
-    instance: OrmModelInstance<
-      TData,
-      TModelExtensions,
-      TModelInstanceExtensions
-    >
+    instance: ModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
   ) => Promise<ToObjectResult<TData>>
   count?: <
     TData extends DataDescription,
@@ -341,174 +356,6 @@ type OrChain = {}
 type LinkStatement = {
   statements: OrmQueryStatement[]
   link: 'and' | 'or'
-}
-
-/*
-Situations
-
-[a=true]
-[a=true and b=true]
-[a=true or b=true]
-[a=[b=true or c=true] and d=[e=true and f=true]]
-
-And statement always first.
-
-Rules:
-Overall object is an array.
-
-Arrays Must:
-Be All statements (Ands)
-Be Statements separated by and/or
-Cannot end with and/or
-Cannot have two and/or in a row.
-
-Each spot can be...
-An array
-A statement
-And/OR
-
-
-
-[
-  [s1 'and' s2], 'and', [[s3 and s4], 'or', [s3 and s5], 'or' [s4 'or' s5]]
-]
-
-
- */
-type S = OrmQueryStatement
-type E = 'AND' | 'OR'
-type Tokens = Tokens[] | S | E
-
-type OverallQuery = Tokens[]
-
-const fu = (o: OverallQuery) => {}
-const property = (
-  name: string,
-  value: any,
-  {
-    caseSensitive = false,
-    startsWith = false,
-    endsWith = false,
-    type = ORMType.string,
-    equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
-  }: PropertyOptions = {}
-) => {
-  if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
-    throw new Error(`${equalitySymbol} is not a valid symbol`)
-  }
-  if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type === ORMType.string) {
-    throw new Error(`Cannot use a non = symbol for a string type`)
-  }
-  if (!type) {
-    type = ORMType.string
-  }
-
-  const propertyEntry: PropertyStatement = {
-    type: 'property',
-    name,
-    value,
-    valueType: type,
-    options: {
-      caseSensitive,
-      startsWith,
-      endsWith,
-      equalitySymbol,
-    },
-  }
-  return propertyEntry
-}
-
-/*
-
-[
-  [s1 'and' s2], 'and', [[s3 and s4], 'or', [s3 and s5], 'or' [s4 'or' s5]]
-]
-
- */
-fu([
-  [property('s1', 'abc'), 'AND', property('s2', 'cbd')],
-  'AND',
-  [
-    [property('s3', '123'), 'AND', property('s4', 'abc')],
-    'OR',
-    [property('s3', '123'), 'AND', property('s5', '098')],
-    'OR',
-    [property('s4', 'abc'), 'AND', property('s5', '098')],
-  ],
-])
-
-const processMongoArray = (o: Tokens[]): { $and: any } => {
-  // If we don't have any AND/OR its all an AND
-  if (o.find(x => x === 'AND' || x === 'OR')) {
-    // All ANDS
-    return {
-      $and: o.map(handleMongoQuery),
-    }
-  }
-  const first = o[0]
-  if (first === 'AND' || first === 'OR') {
-    throw new Error('Cannot have AND or OR at the very start.')
-  }
-  const last = o[o.length - 1]
-  if (last === 'AND' || last === 'OR') {
-    throw new Error('Cannot have AND or OR at the very end.')
-  }
-  const totalLinks = o.filter(x => x === 'AND' || x === 'OR')
-  if (totalLinks.length !== o.length - 1) {
-    throw new Error('Must separate each statement with an AND or OR')
-  }
-  const threes = threeitize(o)
-  const allAndStatements = threes.map(([a, l, b]) => {
-    if (l !== 'AND' && l !== 'OR') {
-      throw new Error(`${l} is not a valid symbol`)
-    }
-    const aQuery = handleMongoQuery(a)
-    const bQuery = handleMongoQuery(b)
-    return {
-      [`$${l.toLowerCase()}`]: [aQuery, bQuery],
-    }
-  })
-  return {
-    $and: allAndStatements,
-  }
-}
-
-const doProperty = (p: PropertyStatement) => {
-  return {
-    [p.name]: p.value,
-  }
-}
-
-const handleMongoQuery = (o: Tokens) => {
-  if (Array.isArray(o)) {
-    return processMongoArray(o)
-  }
-  if (o === 'AND' || o === 'OR') {
-    throw new Error(``)
-  }
-  if (o.type === 'property') {
-    return doProperty(o)
-  }
-  throw new Error('Unhandled currently')
-}
-
-const mongoMatch = (o: OverallQuery) => {
-  return {
-    $match: handleMongoQuery(o),
-  }
-}
-
-const threeitize = <T>(data: T[]): T[][] => {
-  if (data.length === 0 || data.length === 1) {
-    return []
-  }
-  if (data.length < 3) {
-    throw new Error('Must include at least 3 items')
-  }
-  const three = data.slice(0, 3)
-  const rest = data.slice(2)
-  const moreThrees = threeitize(rest)
-  return [three, ...moreThrees]
 }
 
 type QueryStatement = {
@@ -603,7 +450,7 @@ type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
 
 type Orm = {
   Model: OrmModelFactory
-  fetcher: ModelInstanceFetcher
+  fetcher: ModelInstanceFetcher<OrmModelExtensions, OrmModelInstanceExtensions>
   datastoreProvider: DatastoreProvider
 }
 
@@ -626,7 +473,6 @@ export {
   OrmModel,
   OrmModelInstance,
   DatastoreProvider,
-  OrmModelOptions,
   OrmModelFactory,
   SaveOverride,
   DeleteOverride,
@@ -642,4 +488,8 @@ export {
   BuilderFlowFunction,
   Orm,
   BooleanChains,
+  OrmModelExtensions,
+  OrmModelInstanceExtensions,
+  OrmModelFactoryOptionsExtensions,
+  MinimumOrmModelDefinition,
 }

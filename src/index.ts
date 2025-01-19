@@ -1,13 +1,13 @@
-import orm from './orm'
-import * as ormQuery from './ormQuery'
-import * as datastore from './datastore'
-import * as validation from './validation'
-import * as properties from './properties'
-import * as interfaces from './interfaces'
+export * from './orm'
+export * as ormQuery from './ormQuery'
+export * as datastore from './datastore'
+export * as validation from './validation'
+export * as properties from './properties'
+export * as types from './types'
 
-export * from './ormQuery'
-export * from './interfaces'
+export * from './validation'
 export * from './properties'
-export { create as createNoopDatastoreProvider } from './datastore/noop'
+export * from './types'
+export * from './ormQuery'
 
-export { interfaces, orm, ormQuery, datastore, validation, properties }
+export { create as createNoopDatastoreProvider } from './datastore/noop'

@@ -1,45 +1,59 @@
 import { assert } from 'chai'
-import { TextProperty, NumberProperty } from 'functional-models'
-import datastore from '../../src/datastore/memory'
-import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
-import orm from '../../src/orm'
-import { DatastoreProvider, OrmModelFactory } from '../../src/interfaces'
-import { ValueOptional } from 'functional-models/interfaces'
+import {
+  TextProperty,
+  NumberProperty,
+  PrimaryKeyUuidProperty,
+} from 'functional-models'
+import { create as datastore } from '../../src/datastore/memory'
+import { EQUALITY_SYMBOLS, ORMType } from '../../src/types'
+import { create as orm } from '../../src/orm'
+import { DatastoreProvider, OrmModelFactory } from '../../src/types'
 
-type TestModelType = { name: string }
-type TestModelType2 = { value: number }
-type TestModelType3 = { anotherPKey: string; value: number }
-const TEST_MODEL1_NAME = 'TestModel1'
-const TEST_MODEL2_NAME = 'TestModel2'
+type TestModelType = { id: string; name: string }
+type TestModelType2 = { id: string; value: number }
+type TestModelType3 = { id: string; anotherPKey: string; value: number }
+
+const TEST_MODEL1_NAME = 'functional-models-orm-test-model-1'
+const TEST_MODEL2_NAME = 'functional-models-orm-test-model-2'
 const TEST_MODEL3_NAME = 'TestModel3'
-const createTestModel1 = (BaseModel: OrmModelFactory) =>
-  BaseModel<TestModelType>(TEST_MODEL1_NAME, {
+
+const createTestModel1 = (Model: OrmModelFactory) =>
+  Model<TestModelType>({
+    pluralName: 'TestModel1',
+    namespace: 'functional-models-orm',
     properties: {
-      name: TextProperty<ValueOptional<string>>(),
+      id: PrimaryKeyUuidProperty(),
+      name: TextProperty(),
     },
   })
 
-const createTestModel2 = (BaseModel: OrmModelFactory) =>
-  BaseModel<TestModelType2>(TEST_MODEL2_NAME, {
+const createTestModel2 = (Model: OrmModelFactory) =>
+  Model<TestModelType2>({
+    pluralName: 'TestModel2',
+    namespace: 'functional-models-orm',
     properties: {
+      id: PrimaryKeyUuidProperty(),
       value: NumberProperty(),
     },
   })
 
-const createTestModel3 = (BaseModel: OrmModelFactory) =>
-  BaseModel<TestModelType3>(TEST_MODEL3_NAME, {
+const createTestModel3 = (Model: OrmModelFactory) =>
+  Model<TestModelType3>({
+    pluralName: 'TestModel3',
+    namespace: 'functional-models-orm',
     properties: {
+      id: PrimaryKeyUuidProperty(),
       anotherPKey: TextProperty(),
       value: NumberProperty(),
     },
-    getPrimaryKeyName: () => 'anotherPKey',
+    primaryKeyName: 'anotherPKey',
   })
 
 const setupMocks = (datastoreProvider: DatastoreProvider) => {
   const ormInstance = orm({ datastoreProvider })
   return {
     ormInstance,
-    BaseModel: ormInstance.BaseModel,
+    Model: ormInstance.Model,
   }
 }
 
@@ -65,8 +79,8 @@ describe('/src/datastore/memory.js', () => {
     describe('#search()', () => {
       it('should return no instances when there is no modelName in the db', async () => {
         const datastoreProvider = datastore({})
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {},
@@ -83,8 +97,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '234', name: 'unit-test-2' },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -115,8 +129,8 @@ describe('/src/datastore/memory.js', () => {
         const datastoreProvider = datastore({
           [TEST_MODEL1_NAME]: [{ id: '123', name: 'unit-test' }],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -143,8 +157,8 @@ describe('/src/datastore/memory.js', () => {
         const datastoreProvider = datastore({
           [TEST_MODEL1_NAME]: [{ id: '123', name: 'unit-test' }],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -171,8 +185,8 @@ describe('/src/datastore/memory.js', () => {
         const datastoreProvider = datastore({
           [TEST_MODEL1_NAME]: [{ id: '123', name: 'unit-test' }],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -202,8 +216,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '234', name: 'unit-test-2' },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -234,8 +248,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', name: 'unit-test' },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = (
           await datastoreProvider.search(TEST_MODEL1, {
             properties: {
@@ -270,8 +284,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', value: 4 },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const model = createTestModel2(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const model = createTestModel2(Model)
         const actual = (
           await datastoreProvider.search(model, {
             properties: {
@@ -302,8 +316,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', value: 4 },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const model = createTestModel2(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const model = createTestModel2(Model)
         const actual = (
           await datastoreProvider.search(model, {
             properties: {
@@ -336,8 +350,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', value: 4 },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const model = createTestModel2(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const model = createTestModel2(Model)
         const actual = (
           await datastoreProvider.search(model, {
             properties: {
@@ -366,8 +380,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', value: 4 },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const model = createTestModel2(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const model = createTestModel2(Model)
         const actual = (
           await datastoreProvider.search(model, {
             properties: {
@@ -399,8 +413,8 @@ describe('/src/datastore/memory.js', () => {
             { id: '345', value: 4 },
           ],
         })
-        const { BaseModel } = setupMocks(datastoreProvider)
-        const model = createTestModel2(BaseModel)
+        const { Model } = setupMocks(datastoreProvider)
+        const model = createTestModel2(Model)
         const actual = (
           await datastoreProvider.search(model, {
             properties: {
@@ -424,9 +438,9 @@ describe('/src/datastore/memory.js', () => {
     describe('#retrieve()', () => {
       it('should get the object stored in the db', async () => {
         const myModel = { id: 'my-id', name: 'my-name' }
-        const store = datastore({ TestModel1: [myModel] })
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const store = datastore({ [TEST_MODEL1_NAME]: [myModel] })
+        const { Model } = setupMocks(store)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
         const expected = { id: 'my-id', name: 'my-name' }
         assert.deepEqual(actual, expected)
@@ -434,31 +448,31 @@ describe('/src/datastore/memory.js', () => {
       it('should return undefined when an id not used is passed', async () => {
         const myModel = { id: 'my-id', name: 'my-name' }
         const store = datastore({ TestModel1: [myModel] })
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(store)
+        const TEST_MODEL1 = createTestModel1(Model)
         const actual = await store.retrieve(TEST_MODEL1, 'not-here')
         const expected = undefined
         assert.deepEqual(actual, expected)
       })
     })
     describe('#save()', () => {
-      it('should use the getPrimaryKey() from the model when saving', async () => {
+      it('should use the getModelDefinitions.primaryKey from the model when saving', async () => {
         const store = datastore()
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL3 = createTestModel3(BaseModel)
-        const myModel = TEST_MODEL3.create({
+        const { Model } = setupMocks(store)
+        const TEST_MODEL3 = createTestModel3(Model)
+        const myModel = TEST_MODEL3.create<'id'>({
           anotherPKey: 'my-id',
-          value: 'my-name',
+          value: 123,
         })
         await store.save<TestModelType3>(myModel)
         const actual = await store.retrieve(TEST_MODEL3, 'my-id')
-        const expected = { anotherPKey: 'my-id', value: 'my-name' }
-        assert.deepEqual(actual, expected)
+        const expected = { anotherPKey: 'my-id', value: 123 }
+        assert.deepNestedInclude(actual, expected)
       })
       it('should put an object in there that can be retrieved later', async () => {
         const store = datastore()
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(store)
+        const TEST_MODEL1 = createTestModel1(Model)
         const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
         await store.save<TestModelType>(myModel)
         const actual = await store.retrieve(TEST_MODEL1, 'my-id')
@@ -467,8 +481,8 @@ describe('/src/datastore/memory.js', () => {
       })
       it('should put be able to put two objects in that can then be retrieved later', async () => {
         const store = datastore()
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const { Model } = setupMocks(store)
+        const TEST_MODEL1 = createTestModel1(Model)
         const myModel = TEST_MODEL1.create({ id: 'my-id', name: 'my-name' })
         await store.save<TestModelType>(myModel)
         const myModel2 = TEST_MODEL1.create({
@@ -484,9 +498,9 @@ describe('/src/datastore/memory.js', () => {
     describe('#delete()', () => {
       it('should remove an object that is stored.', async () => {
         const myModel = { id: 'my-id', name: 'my-name' }
-        const store = datastore({ TestModel1: [myModel] })
-        const { BaseModel } = setupMocks(store)
-        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const store = datastore({ [TEST_MODEL1_NAME]: [myModel] })
+        const { Model } = setupMocks(store)
+        const TEST_MODEL1 = createTestModel1(Model)
         const myModelInstance = TEST_MODEL1.create(myModel)
         const first = await store.retrieve(TEST_MODEL1, 'my-id')
         assert.isOk(first)

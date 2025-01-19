@@ -1,19 +1,18 @@
 import { assert } from 'chai'
 import sinon from 'sinon'
-import createDatastore from '../../src/datastore/memory'
-import orm from '../../src/orm'
+import { create as createDatastore } from '../../src/datastore/memory'
+import { create as orm } from '../../src/orm'
 import { LastModifiedDateProperty } from '../../src/properties'
 import {
-  BaseModel,
+  Model,
   NumberProperty,
   TextProperty,
-  UniqueId,
+  PrimaryKeyUuidProperty,
 } from 'functional-models'
-import { OrmModelInstance } from '../../src/interfaces'
 import { ormQueryBuilder } from '../../src/ormQuery'
 
 describe('/src/orm.ts', () => {
-  describe('#orm()', () => {
+  describe('#create()', () => {
     it('should throw an exception if no datastore is provided', () => {
       const datastoreProvider = null
       assert.throws(() => {
@@ -27,59 +26,85 @@ describe('/src/orm.ts', () => {
         const instance = orm({ datastoreProvider })
       })
     })
-    it('should create an object without exception if a datastoreProvider and a BaseModel is passed', () => {
+    it('should create an object without exception if a datastoreProvider and a Model is passed', () => {
       const datastoreProvider = createDatastore()
       assert.doesNotThrow(() => {
-        const instance = orm({ datastoreProvider, BaseModel })
+        const instance = orm({ datastoreProvider, Model })
       })
     })
 
-    describe('#BaseModel()', () => {
-      it('should pass the modelname to the BaseModel', () => {
+    describe('#Model()', () => {
+      it('should pass the modelname to the Model', () => {
         const datastoreProvider = createDatastore()
-        const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel('MyModel', { properties: {} }, {})
+        const instance = orm({ datastoreProvider, Model })
+        const model = instance.Model(
+          {
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+            },
+          },
+          {}
+        )
         const actual = model.getName()
-        const expected = 'MyModel'
+        const expected = 'functional-models-orm-my-models'
         assert.deepEqual(actual, expected)
       })
       it('should have functions.search', () => {
         const datastoreProvider = createDatastore()
-        const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel('MyModel', { properties: {} }, {})
+        const instance = orm({ datastoreProvider, Model })
+        const model = instance.Model(
+          {
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+            },
+          },
+          {}
+        )
         const actual = model.search
         assert.isFunction(actual)
       })
       it('should allow not passing a modelOptions', () => {
         const datastoreProvider = createDatastore()
-        const instance = orm({ datastoreProvider, BaseModel })
+        const instance = orm({ datastoreProvider, Model })
         assert.doesNotThrow(() => {
-          instance.BaseModel('MyModel', { properties: {} })
+          instance.Model({
+            pluralName: 'MyModels',
+            namespace: 'functional-model-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+            },
+          })
         })
       })
-      it('should create a uniqueTogether validation when "uniqueTogether" is used.', async () => {
+      it('should create a uniqueTogether validation when "uniqueTogether" is used', async () => {
         const datastoreProvider = createDatastore({
-          Test: [
+          ['functional-models-orm-test']: [
             {
+              id: 'my-id',
               name: 'my-name',
               age: 1,
             },
           ],
         })
-        const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel<{ name: string; age: number }>(
-          'Test',
+        const instance = orm({ datastoreProvider, Model })
+        const model = instance.Model<{ id: string; name: string; age: number }>(
           {
+            pluralName: 'Test',
+            namespace: 'functional-models-orm',
             properties: {
+              id: PrimaryKeyUuidProperty(),
               name: TextProperty(),
               age: NumberProperty(),
             },
-          },
-          {
+            modelValidators: [],
             uniqueTogether: ['name', 'age'],
           }
         )
-        const modelInstance = model.create({ name: 'my-name', age: 1 })
+        const modelInstance = model.create<'id'>({ name: 'my-name', age: 1 })
         const actual = await modelInstance.validate()
         const expected = {
           overall: [
@@ -96,8 +121,13 @@ describe('/src/orm.ts', () => {
             .stub()
             .resolves({ id: 'test-me', name: 'hello world' })
           const instance = orm({ datastoreProvider })
-          const model = instance.BaseModel<{ name: string }>('MyModel', {
-            properties: { name: TextProperty() },
+          const model = instance.Model<{ name: string }>({
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+              name: TextProperty(),
+            },
           })
           const modelInstance = model.create({ name: 'hello world' })
           const create = sinon.stub().returns({
@@ -119,8 +149,13 @@ describe('/src/orm.ts', () => {
           // @ts-ignore
           datastoreProvider.createAndSave = createAndSave
           const instance = orm({ datastoreProvider })
-          const model = instance.BaseModel<{ name: string }>('MyModel', {
-            properties: { name: TextProperty() },
+          const model = instance.Model<{ name: string }>({
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+              name: TextProperty(),
+            },
           })
           const modelInstance = model.create({ name: 'hello world' })
           await model.createAndSave(modelInstance)
@@ -132,9 +167,14 @@ describe('/src/orm.ts', () => {
           const datastoreProvider = createDatastore()
           const instanceCreatedCallback = sinon.stub()
           const instance = orm({ datastoreProvider })
-          const model = instance.BaseModel(
-            'MyModel',
-            { properties: {} },
+          const model = instance.Model(
+            {
+              pluralName: 'MyModels',
+              namespace: 'functional-models-orm',
+              properties: {
+                id: PrimaryKeyUuidProperty(),
+              },
+            },
             { instanceCreatedCallback }
           )
           model.create({})
@@ -144,9 +184,14 @@ describe('/src/orm.ts', () => {
           const datastoreProvider = createDatastore()
           const instanceCreatedCallback = sinon.stub()
           const instance = orm({ datastoreProvider })
-          const model = instance.BaseModel(
-            'MyModel',
-            { properties: {} },
+          const model = instance.Model(
+            {
+              pluralName: 'MyModels',
+              namespace: 'functional-models-orm',
+              properties: {
+                id: PrimaryKeyUuidProperty(),
+              },
+            },
             { instanceCreatedCallback: [instanceCreatedCallback] }
           )
           model.create({})
@@ -155,11 +200,16 @@ describe('/src/orm.ts', () => {
         describe('#delete()', () => {
           it('should replace delete() with DeleteOverride when passed into options', async () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, BaseModel })
+            const instance = orm({ datastoreProvider, Model })
             const deleteObj = sinon.stub().resolves({})
-            const model = instance.BaseModel(
-              'MyModel',
-              { properties: {} },
+            const model = instance.Model(
+              {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
+                properties: {
+                  id: PrimaryKeyUuidProperty(),
+                },
+              },
               { delete: deleteObj }
             )
             const modelInstance = model.create({})
@@ -171,11 +221,13 @@ describe('/src/orm.ts', () => {
               delete: sinon.stub().resolves({}),
             }
             // @ts-ignore
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{ name: string }>(
-              'MyModel',
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model<{ id: string; name: string }>(
               {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
                 properties: {
+                  id: PrimaryKeyUuidProperty(),
                   name: TextProperty({ required: true }),
                 },
               },
@@ -195,11 +247,13 @@ describe('/src/orm.ts', () => {
           it('should change lastModified field from "2021-01-01T00:00:01Z" when lastModifiedUpdateMethod exists on a property', async () => {
             const datastoreProvider = sinon.spy(createDatastore())
             // @ts-ignore
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{ lastModified: Date }>(
-              'MyModel',
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model<{ lastModified: Date }>(
               {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
                 properties: {
+                  id: PrimaryKeyUuidProperty(),
                   lastModified: LastModifiedDateProperty(),
                 },
               },
@@ -216,18 +270,32 @@ describe('/src/orm.ts', () => {
           })
           it('should have a .save() function', () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel('MyModel', { properties: {} }, {})
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model(
+              {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
+                properties: {
+                  id: PrimaryKeyUuidProperty(),
+                },
+              },
+              {}
+            )
             const modelInstance = model.create({})
             assert.isFunction(modelInstance.save)
           })
           it('should replace save() with SaveOverride when passed into options', async () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, BaseModel })
+            const instance = orm({ datastoreProvider, Model })
             const save = sinon.stub().resolves({})
-            const model = instance.BaseModel(
-              'MyModel',
-              { properties: {} },
+            const model = instance.Model(
+              {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
+                properties: {
+                  id: PrimaryKeyUuidProperty(),
+                },
+              },
               { save }
             )
             const modelInstance = model.create({})
@@ -236,11 +304,13 @@ describe('/src/orm.ts', () => {
           })
           it('should throw an exception if the model has validation errors and save is called', () => {
             const datastoreProvider = createDatastore()
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{ name: string }>(
-              'MyModel',
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model<{ name: string }>(
               {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
                 properties: {
+                  id: PrimaryKeyUuidProperty(),
                   name: TextProperty({ required: true }),
                 },
               },
@@ -260,11 +330,13 @@ describe('/src/orm.ts', () => {
               save: sinon.stub().returns({ name: 'my-name' }),
             }
             // @ts-ignore
-            const instance = orm({ datastoreProvider, BaseModel })
-            const model = instance.BaseModel<{ name: string }>(
-              'MyModel',
+            const instance = orm({ datastoreProvider, Model })
+            const model = instance.Model<{ name: string }>(
               {
+                pluralName: 'MyModels',
+                namespace: 'functional-models-orm',
                 properties: {
+                  id: PrimaryKeyUuidProperty(),
                   name: TextProperty({ required: true }),
                 },
               },
@@ -286,8 +358,17 @@ describe('/src/orm.ts', () => {
             retrieve: sinon.stub().resolves(null),
           }
           // @ts-ignore
-          const instance = orm({ datastoreProvider, BaseModel })
-          const model = instance.BaseModel('MyModel', { properties: {} }, {})
+          const instance = orm({ datastoreProvider, Model })
+          const model = instance.Model(
+            {
+              pluralName: 'MyModels',
+              namespace: 'functional-models-orm',
+              properties: {
+                id: PrimaryKeyUuidProperty(),
+              },
+            },
+            {}
+          )
           const id = 123
           await model.retrieve(id)
           const actual = datastoreProvider.retrieve.getCall(0).args
@@ -301,8 +382,17 @@ describe('/src/orm.ts', () => {
             search: sinon.stub().resolves({ page: null, instances: [] }),
           }
           // @ts-ignore
-          const instance = orm({ datastoreProvider, BaseModel })
-          const model = instance.BaseModel('MyModel', { properties: {} }, {})
+          const instance = orm({ datastoreProvider, Model })
+          const model = instance.Model(
+            {
+              pluralName: 'MyModels',
+              namespace: 'functional-models-orm',
+              properties: {
+                id: PrimaryKeyUuidProperty(),
+              },
+            },
+            {}
+          )
           const ormQuery = ormQueryBuilder().compile()
           await model.search(ormQuery)
           const actual = datastoreProvider.search.getCall(0).args
@@ -314,11 +404,13 @@ describe('/src/orm.ts', () => {
         it('should return one object even though two are matched', async () => {
           const datastoreProvider = createDatastore()
           // @ts-ignore
-          const instance = orm({ datastoreProvider, BaseModel })
-          const model = instance.BaseModel<{ name: string }>(
-            'MyModel',
+          const instance = orm({ datastoreProvider, Model })
+          const model = instance.Model<{ name: string }>(
             {
+              pluralName: 'MyModels',
+              namespace: 'functional-models-orm',
               properties: {
+                id: PrimaryKeyUuidProperty(),
                 name: TextProperty(),
               },
             },
@@ -341,8 +433,17 @@ describe('/src/orm.ts', () => {
           retrieve: sinon.stub().resolves(undefined),
         }
         // @ts-ignore
-        const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel<{}>('MyModel', { properties: {} }, {})
+        const instance = orm({ datastoreProvider, Model })
+        const model = instance.Model<{}>(
+          {
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
+            properties: {
+              id: PrimaryKeyUuidProperty(),
+            },
+          },
+          {}
+        )
         // @ts-ignore
         await instance.fetcher(model, 'my-id')
 
@@ -358,11 +459,13 @@ describe('/src/orm.ts', () => {
           }),
         }
         // @ts-ignore
-        const instance = orm({ datastoreProvider, BaseModel })
-        const model = instance.BaseModel<{ name: string }>(
-          'MyModel',
+        const instance = orm({ datastoreProvider, Model })
+        const model = instance.Model<{ name: string }>(
           {
+            pluralName: 'MyModels',
+            namespace: 'functional-models-orm',
             properties: {
+              id: PrimaryKeyUuidProperty(),
               name: TextProperty(),
             },
           },
@@ -383,8 +486,13 @@ describe('/src/orm.ts', () => {
       it('should return 2 when there are 2 models', async () => {
         const datastoreProvider = createDatastore()
         const instance = orm({ datastoreProvider })
-        const model = instance.BaseModel<{ name: string }>('MyModel', {
-          properties: { name: TextProperty() },
+        const model = instance.Model<{ name: string }>({
+          pluralName: 'MyModels',
+          namespace: 'functional-models-orm',
+          properties: {
+            id: PrimaryKeyUuidProperty(),
+            name: TextProperty(),
+          },
         })
         await model.create({ name: 'hello world' }).save()
         await model.create({ name: 'hello world 2' }).save()
@@ -420,8 +528,13 @@ describe('/src/orm.ts', () => {
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider })
-        const model = instance.BaseModel<{ name: string }>('MyModel', {
-          properties: { name: TextProperty() },
+        const model = instance.Model<{ name: string }>({
+          pluralName: 'MyModels',
+          namespace: 'functional-models-orm',
+          properties: {
+            id: PrimaryKeyUuidProperty(),
+            name: TextProperty(),
+          },
         })
         const actual = await model.count()
         const expected = 3
@@ -433,8 +546,13 @@ describe('/src/orm.ts', () => {
         }
         // @ts-ignore
         const instance = orm({ datastoreProvider })
-        const model = instance.BaseModel<{ name: string }>('MyModel', {
-          properties: { name: TextProperty() },
+        const model = instance.Model<{ name: string }>({
+          pluralName: 'MyModels',
+          namespace: 'functional-models-orm',
+          properties: {
+            id: PrimaryKeyUuidProperty(),
+            name: TextProperty(),
+          },
         })
         await model.count()
         assert.isTrue(datastoreProvider.count.called)
@@ -447,16 +565,25 @@ describe('/src/orm.ts', () => {
           .stub()
           .resolves({ id: 'test-me', name: 'hello world' })
         const instance = orm({ datastoreProvider })
-        const model = instance.BaseModel<{ name: string }>('MyModel', {
-          properties: { name: TextProperty() },
+        const model = instance.Model<{ name: string }>({
+          pluralName: 'MyModels',
+          namespace: 'functional-models-orm',
+          properties: {
+            id: PrimaryKeyUuidProperty(),
+            name: TextProperty(),
+          },
         })
         const modelInstance = model.create({ name: 'hello world' })
+        //@ts-ignore
         modelInstance.save = save
         const modelInstance2 = model.create({ name: 'hello world' })
+        //@ts-ignore
         modelInstance2.save = save
         const modelInstance3 = model.create({ name: 'hello world' })
+        //@ts-ignore
         modelInstance3.save = save
         const modelInstance4 = model.create({ name: 'hello world' })
+        //@ts-ignore
         modelInstance4.save = save
         await model.bulkInsert([
           modelInstance,
@@ -472,8 +599,13 @@ describe('/src/orm.ts', () => {
         // @ts-ignore
         datastoreProvider.bulkInsert = bulkInsert
         const instance = orm({ datastoreProvider })
-        const model = instance.BaseModel<{ name: string }>('MyModel', {
-          properties: { name: TextProperty() },
+        const model = instance.Model<{ name: string }>({
+          pluralName: 'MyModels',
+          namespace: 'functional-models-orm',
+          properties: {
+            id: PrimaryKeyUuidProperty(),
+            name: TextProperty(),
+          },
         })
         const modelInstance = model.create({ name: 'hello world' })
         await model.bulkInsert([modelInstance])

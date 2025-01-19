@@ -7,11 +7,13 @@
   "scripts": {
     "commit": "cz",
     "watch": "tsc -w --noEmit",
-    "test": "mocha -r ts-node/register test/**/*.test.ts",
-    "test:coverage": "nyc npm run test",
+    "test1": "mocha -r ts-node/register test/**/*.test.ts",
+    "test:coverage1": "nyc npm run test",
+    "test": "mocha -r tsx --extensions ts,tsx 'test/**/*.{ts,tsx}'",
+    "test:coverage": "TS_NODE_PROJECT=tsconfig.test.json nyc npm run test",
     "feature-tests": "node ./node_modules/.bin/cucumber-js --require ./features/stepDefinitions/*.js",
     "coverage": "nyc --all --reporter=lcov npm test",
-    "build": "tsc -p ./tsconfig.build.json && cp package.json ./dist && cp README.md ./dist",
+    "build": "rm -Rf ./dist && tsc && cp package.json ./dist && cp README.md ./dist",
     "build:watch": "nodemon -e '*' --watch ./src --exec npm run build",
     "prettier": "prettier --write .",
     "eslint": "eslint . --fix",
@@ -99,7 +101,7 @@
   "homepage": "https://github.com/monolithst/functional-models-orm#readme",
   "dependencies": {
     "date-fns": "^3.6.0",
-    "functional-models": "^3.0.1",
+    "functional-models": "^3.0.5",
     "lodash": "^4.17.21"
   }
 }

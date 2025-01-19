@@ -9,25 +9,23 @@ import { isAfter } from 'date-fns/isAfter'
 import { isEqual } from 'date-fns/isEqual'
 /* eslint-enable import/no-duplicates */
 import {
-  FunctionalModel,
+  DataDescription,
   JsonAble,
-  Model,
+  ModelType,
   ModelInstance,
   PrimaryKeyType,
-  TypedJsonObj,
-} from 'functional-models/interfaces'
+  ToObjectResult,
+} from 'functional-models'
 import {
   DatastoreProvider,
   OrmQuery,
   DatesBeforeStatement,
   DatastoreSearchResult,
-} from '../interfaces'
+  OrmModel,
+} from '../types'
 
-const _getDbEntryInfo = async <
-  T extends FunctionalModel,
-  TModel extends Model<T>,
->(
-  instance: ModelInstance<T, TModel>
+const _getDbEntryInfo = async <T extends DataDescription>(
+  instance: ModelInstance<T>
 ) => {
   const modelName: string = instance.getModel().getName()
   const obj = await instance.toObj()
@@ -36,17 +34,16 @@ const _getDbEntryInfo = async <
   return r
 }
 
-type ModelType = string
 type SeedModels = {
   // eslint-disable-next-line functional/prefer-readonly-type
-  [s: ModelType]: readonly TypedJsonObj<any>[]
+  [modelType: string]: readonly ToObjectResult<any>[]
 }
 
 type ModelsDb = {
   // eslint-disable-next-line functional/prefer-readonly-type
-  [s: ModelType]: {
+  [modelType: string]: {
     // eslint-disable-next-line functional/prefer-readonly-type
-    [s: PrimaryKeyType]: readonly TypedJsonObj<any>[]
+    [s: PrimaryKeyType]: readonly ToObjectResult<any>[]
   }
 }
 
@@ -60,7 +57,7 @@ type MemoryDatastoreProviderProps = Readonly<{
   onDbChanged: (db: ModelsDb) => void
 }>
 
-const memoryDatastoreProvider = (
+const create = (
   seedModelsByModelName: SeedModels = {},
   {
     getSeedPrimaryKeyName = () => 'id',
@@ -87,32 +84,42 @@ const memoryDatastoreProvider = (
     {}
   )
 
-  const save = <T extends FunctionalModel, TModel extends Model<T>>(
-    instance: ModelInstance<T, TModel>
-  ): Promise<TypedJsonObj<T>> => {
+  const save = <
+    T extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    instance: ModelInstance<T, TModelExtensions, TModelInstanceExtensions>
+  ): Promise<ToObjectResult<T>> => {
     return (
       Promise.resolve()
         // eslint-disable-next-line no-undef,functional/immutable-data
         .then(async () => {
-          const [modelName, obj] = await _getDbEntryInfo<T, TModel>(instance)
+          const [modelName, obj] = await _getDbEntryInfo<T>(instance)
           if (!(modelName in db)) {
             // eslint-disable-next-line functional/immutable-data
             db[modelName] = {}
           }
-          const primaryKey = instance.getModel().getPrimaryKeyName()
+          const primaryKey = instance
+            .getModel()
+            .getModelDefinition().primaryKeyName
           // @ts-ignore
           // eslint-disable-next-line functional/immutable-data
           db[modelName][obj[primaryKey]] = obj
           if (onDbChanged) {
             onDbChanged(db)
           }
-          return obj as TypedJsonObj<T>
+          return obj as ToObjectResult<T>
         })
     )
   }
 
-  const deleteObj = <T extends FunctionalModel, TModel extends Model<T>>(
-    instance: ModelInstance<T, TModel>
+  const deleteObj = <
+    T extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    instance: ModelInstance<T, TModelExtensions, TModelInstanceExtensions>
   ) => {
     return (
       Promise.resolve()
@@ -121,7 +128,9 @@ const memoryDatastoreProvider = (
           const [modelName, obj] = await _getDbEntryInfo(instance)
           // eslint-disable-next-line no-undef,functional/immutable-data
           if (obj) {
-            const primaryKey = instance.getModel().getPrimaryKeyName()
+            const primaryKey = instance
+              .getModel()
+              .getModelDefinition().primaryKeyName
             // @ts-ignore
             // eslint-disable-next-line functional/immutable-data
             delete db[modelName][obj[primaryKey]]
@@ -133,8 +142,12 @@ const memoryDatastoreProvider = (
     )
   }
 
-  const retrieve = <T extends FunctionalModel>(
-    model: Model<T>,
+  const retrieve = <
+    T extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    model: OrmModel<T, TModelExtensions, TModelInstanceExtensions>,
     primaryKey: PrimaryKeyType
   ) => {
     return Promise.resolve().then(() => {
@@ -145,7 +158,7 @@ const memoryDatastoreProvider = (
         return undefined
       }
       // @ts-ignore
-      return x as TypedJsonObj<T, any>
+      return x as ToObjectResult<T, any>
     })
   }
 
@@ -160,8 +173,12 @@ const memoryDatastoreProvider = (
     '<': (name, value) => obj => obj[name] < value,
   }
 
-  const search = <T extends FunctionalModel, TModel extends Model<T>>(
-    model: TModel,
+  const search = <
+    T extends DataDescription,
+    TModelExtensions extends object = object,
+    TModelInstanceExtensions extends object = object,
+  >(
+    model: ModelType<T, TModelExtensions, TModelInstanceExtensions>,
     ormQuery: OrmQuery
   ): Promise<DatastoreSearchResult<T>> => {
     return Promise.resolve().then(() => {
@@ -199,7 +216,7 @@ const memoryDatastoreProvider = (
       type ValidationFunc = (obj: SimpleObj) => boolean
       const models = db[modelName] as {
         // eslint-disable-next-line functional/prefer-readonly-type
-        [s: PrimaryKeyType]: readonly TypedJsonObj<T>[]
+        [s: PrimaryKeyType]: readonly ToObjectResult<T>[]
       }
       const beforeFilters = Object.entries(
         ormQuery.datesBefore ||
@@ -262,7 +279,7 @@ const memoryDatastoreProvider = (
       const instances = ormQuery.take
         ? results.slice(0, ormQuery.take)
         : results
-      const sorted: readonly TypedJsonObj<T>[] = ormQuery.sort
+      const sorted: readonly ToObjectResult<T>[] = ormQuery.sort
         ? orderBy(
             instances,
             [ormQuery.sort.key],
@@ -285,4 +302,4 @@ const memoryDatastoreProvider = (
   }
 }
 
-export default memoryDatastoreProvider
+export { create }

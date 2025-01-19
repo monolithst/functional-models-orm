@@ -17,8 +17,9 @@ import {
   DatesBeforeStatement,
   OrmQueryBuilder,
   BooleanChains,
-} from '../../src/interfaces'
-import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
+  EQUALITY_SYMBOLS,
+  ORMType,
+} from '../../src/types'
 
 const TEST_OBJS: { [s: string]: PropertyStatement } = {
   'my-name': {

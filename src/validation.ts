@@ -1,30 +1,28 @@
 import flow from 'lodash/flow'
 import {
   PropertyValidatorComponentAsync,
-  FunctionalModel,
+  DataDescription,
   PrimaryKeyType,
-  ModelError,
+  ComponentValidationErrorResponse,
   JsonAble,
   ModelValidatorComponent,
-} from 'functional-models/interfaces'
+} from 'functional-models'
 import { ormQueryBuilder } from './ormQuery'
 import {
   OrmQuery,
-  OrmValidatorConfiguration,
+  OrmValidatorContext,
   OrmModelInstance,
   OrmModel,
-} from './interfaces'
+  OrmModelExtensions,
+  OrmModelInstanceExtensions,
+} from './types'
 
-const _doUniqueCheck = async <
-  T extends FunctionalModel,
-  TModel extends OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel>,
->(
+const _doUniqueCheck = async <T extends DataDescription>(
   query: OrmQuery,
-  instance: TModelInstance,
+  instance: OrmModelInstance<T>,
   instanceData: T | JsonAble,
-  buildErrorMessage: () => ModelError
-): Promise<ModelError> => {
+  buildErrorMessage: () => ComponentValidationErrorResponse
+): Promise<ComponentValidationErrorResponse> => {
   const model = instance.getModel()
   const results = await model.search(query)
   const resultsLength = results.instances.length
@@ -37,7 +35,7 @@ const _doUniqueCheck = async <
   )
   // We have our match by id.
   // @ts-ignore
-  const instanceId = instanceData[model.getPrimaryKeyName()]
+  const instanceId = instanceData[model.getModelDefinition().primaryKeyName]
   if (ids.length === 1 && ids[0] === instanceId) {
     return undefined
   }
@@ -51,20 +49,17 @@ const _doUniqueCheck = async <
   return buildErrorMessage()
 }
 
-const uniqueTogether = <
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
->(
+const uniqueTogether = <T extends DataDescription>(
   propertyKeyArray: readonly string[]
-): ModelValidatorComponent<T, TModel, TModelInstance> => {
+): ModelValidatorComponent<
+  T,
+  OrmModelExtensions,
+  OrmModelInstanceExtensions
+> => {
   const _uniqueTogether = async (
-    instance: TModelInstance,
+    instance: OrmModelInstance<T>,
     instanceData: T | JsonAble,
-    options: OrmValidatorConfiguration
+    options: OrmValidatorContext
   ) => {
     if (options.noOrmValidation) {
       return undefined
@@ -86,51 +81,38 @@ const uniqueTogether = <
     )(ormQueryBuilder())
       .take(2)
       .compile()
-    return _doUniqueCheck<T, TModel, TModelInstance>(
-      query,
-      instance,
-      instanceData,
-      () => {
-        return propertyKeyArray.length > 1
-          ? `${propertyKeyArray.join(
-              ','
-            )} must be unique together. Another instance found.`
-          : `${propertyKeyArray[0]} must be unique. Another instance found.`
-      }
-    )
+    return _doUniqueCheck<T>(query, instance, instanceData, () => {
+      return propertyKeyArray.length > 1
+        ? `${propertyKeyArray.join(
+            ','
+          )} must be unique together. Another instance found.`
+        : `${propertyKeyArray[0]} must be unique. Another instance found.`
+    })
   }
   return _uniqueTogether
 }
 
-const unique = <
-  T extends FunctionalModel,
-  TModel extends OrmModel<T> = OrmModel<T>,
-  TModelInstance extends OrmModelInstance<T, TModel> = OrmModelInstance<
-    T,
-    TModel
-  >,
->(
+const unique = <T extends DataDescription>(
   propertyKey: string
-): PropertyValidatorComponentAsync<T, TModel, TModelInstance> => {
-  const _unique: PropertyValidatorComponentAsync<T, TModel, TModelInstance> = (
-    value,
-    instance,
-    instanceData,
-    options
-  ) => {
-    return uniqueTogether<T, TModel, TModelInstance>([propertyKey])(
-      instance,
-      instanceData,
-      options
-    )
+): PropertyValidatorComponentAsync<
+  T,
+  OrmModelExtensions,
+  OrmModelInstanceExtensions
+> => {
+  const _unique: PropertyValidatorComponentAsync<
+    T,
+    OrmModelExtensions,
+    OrmModelInstanceExtensions
+  > = (value, instance, instanceData, options) => {
+    return uniqueTogether<T>([propertyKey])(instance, instanceData, options)
   }
   return _unique
 }
 
-const buildOrmValidationOptions = ({
+const buildOrmValidatorContext = ({
   noOrmValidation = false,
-}): OrmValidatorConfiguration => ({
+}): OrmValidatorContext => ({
   noOrmValidation,
 })
 
-export { unique, uniqueTogether, buildOrmValidationOptions }
+export { unique, uniqueTogether, buildOrmValidatorContext }

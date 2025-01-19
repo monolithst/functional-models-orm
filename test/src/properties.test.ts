@@ -4,8 +4,8 @@ import {
   OrmModelReferenceProperty,
 } from '../../src/properties'
 import { unique } from '../../src/validation'
-import { PropertyValidatorComponent } from 'functional-models/interfaces'
-import { OrmModel } from '../../src/interfaces'
+import { PropertyValidatorComponent } from 'functional-models'
+import { OrmModel } from '../../src/types'
 
 describe('/src/properties.ts', () => {
   describe('#OrmModelReferenceProperty()', () => {
