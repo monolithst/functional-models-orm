@@ -16,12 +16,12 @@ import {
   ModelFactoryOptions,
 } from 'functional-models'
 
-enum EQUALITY_SYMBOLS {
-  EQUALS = '=',
-  LT = '<',
-  LTE = '<=',
-  GT = '>',
-  GTE = '>=',
+enum EqualitySymbol {
+  eq = '=',
+  lt = '<',
+  lte = '<=',
+  gt = '>',
+  gte = '>=',
 }
 
 enum ORMType {
@@ -32,7 +32,7 @@ enum ORMType {
   boolean = 'boolean',
 }
 
-const ALLOWABLE_EQUALITY_SYMBOLS = Object.values(EQUALITY_SYMBOLS)
+const AllowableEqualitySymbols = Object.values(EqualitySymbol)
 
 type SaveMethod<
   TModelExtensions extends object = object,
@@ -284,7 +284,7 @@ type PropertyStatement = Readonly<{
     caseSensitive?: boolean
     startsWith?: boolean
     endsWith?: boolean
-    equalitySymbol?: EQUALITY_SYMBOLS
+    equalitySymbol?: EqualitySymbol
   }
 }>
 
@@ -428,7 +428,7 @@ type OrmQueryBuilder = Readonly<{
       startsWith?: boolean
       endsWith?: boolean
       type?: ORMType
-      equalitySymbol?: EQUALITY_SYMBOLS
+      equalitySymbol?: EqualitySymbol
     }
   ) => OrmQueryBuilder
   pagination: (value: any) => OrmQueryBuilder
@@ -443,7 +443,7 @@ type PropertyOptions = {
   startsWith?: boolean
   endsWith?: boolean
   type?: ORMType
-  equalitySymbol?: EQUALITY_SYMBOLS
+  equalitySymbol?: EqualitySymbol
 }
 
 type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
@@ -481,9 +481,9 @@ export {
   OrmValidatorContext,
   OrmQueryBuilder,
   OrmSearchResult,
-  EQUALITY_SYMBOLS,
+  EqualitySymbol,
   ORMType,
-  ALLOWABLE_EQUALITY_SYMBOLS,
+  AllowableEqualitySymbols,
   PropertyOptions,
   BuilderFlowFunction,
   Orm,

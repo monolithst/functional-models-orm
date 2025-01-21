@@ -16,9 +16,9 @@ import {
   BuilderFlowFunction,
   PropertyOptions,
   BooleanChains,
-  EQUALITY_SYMBOLS,
+  EqualitySymbol,
   ORMType,
-  ALLOWABLE_EQUALITY_SYMBOLS,
+  AllowableEqualitySymbols,
 } from './types'
 
 const compile = (queryData: readonly OrmQueryStatement[]) => (): OrmQuery => {
@@ -93,13 +93,13 @@ const ormQueryBuilder = (queryData: readonly OrmQueryStatement[] = []) => {
       startsWith = false,
       endsWith = false,
       type = ORMType.string,
-      equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
+      equalitySymbol = EqualitySymbol.eq,
     }: PropertyOptions = {}
   ) => {
-    if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
+    if (!AllowableEqualitySymbols.includes(equalitySymbol)) {
       throw new Error(`${equalitySymbol} is not a valid symbol`)
     }
-    if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type === ORMType.string) {
+    if (equalitySymbol !== EqualitySymbol.eq && type === ORMType.string) {
       throw new Error(`Cannot use a non = symbol for a string type`)
     }
     if (!type) {

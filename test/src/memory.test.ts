@@ -5,7 +5,7 @@ import {
   PrimaryKeyUuidProperty,
 } from 'functional-models'
 import { create as datastore } from '../../src/datastore/memory'
-import { EQUALITY_SYMBOLS, ORMType } from '../../src/types'
+import { EqualitySymbol, ORMType } from '../../src/types'
 import { create as orm } from '../../src/orm'
 import { DatastoreProvider, OrmModelFactory } from '../../src/types'
 
@@ -109,7 +109,7 @@ describe('/src/datastore/memory.js', () => {
                 valueType: ORMType.string,
                 options: {
                   caseSensitive: false,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   startsWith: true,
                 },
@@ -140,7 +140,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 'Unit-Test',
                 valueType: ORMType.string,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   caseSensitive: false,
                   startsWith: false,
@@ -169,7 +169,7 @@ describe('/src/datastore/memory.js', () => {
                 valueType: ORMType.string,
                 options: {
                   caseSensitive: true,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   startsWith: false,
                 },
@@ -196,7 +196,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 'unit-test',
                 valueType: ORMType.string,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   startsWith: false,
                   caseSensitive: true,
@@ -228,7 +228,7 @@ describe('/src/datastore/memory.js', () => {
                 valueType: ORMType.string,
                 options: {
                   caseSensitive: true,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   startsWith: false,
                 },
@@ -260,7 +260,7 @@ describe('/src/datastore/memory.js', () => {
                 valueType: ORMType.string,
                 options: {
                   caseSensitive: false,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                   endsWith: false,
                   startsWith: false,
                 },
@@ -295,7 +295,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 2,
                 valueType: ORMType.number,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.GT,
+                  equalitySymbol: EqualitySymbol.gt,
                 },
               },
             },
@@ -327,7 +327,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 2,
                 valueType: ORMType.number,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.GTE,
+                  equalitySymbol: EqualitySymbol.gte,
                 },
               },
             },
@@ -361,7 +361,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 2,
                 valueType: ORMType.number,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.LT,
+                  equalitySymbol: EqualitySymbol.lt,
                 },
               },
             },
@@ -391,7 +391,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 2,
                 valueType: ORMType.number,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.LTE,
+                  equalitySymbol: EqualitySymbol.lte,
                 },
               },
             },
@@ -424,7 +424,7 @@ describe('/src/datastore/memory.js', () => {
                 value: 2,
                 valueType: ORMType.number,
                 options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                  equalitySymbol: EqualitySymbol.eq,
                 },
               },
             },

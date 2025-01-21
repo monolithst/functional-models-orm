@@ -33,8 +33,8 @@ And/OR
 
  */
 import {
-  ALLOWABLE_EQUALITY_SYMBOLS,
-  EQUALITY_SYMBOLS,
+  AllowableEqualitySymbols,
+  EqualitySymbol,
   ORMType,
   PropertyStatement,
 } from './types'
@@ -46,6 +46,7 @@ type Tokens = Tokens[] | S | E
 type OverallQuery = Tokens[]
 
 const fu = (o: OverallQuery) => {}
+
 const property = (
   name: string,
   value: any,
@@ -54,13 +55,13 @@ const property = (
     startsWith = false,
     endsWith = false,
     type = ORMType.string,
-    equalitySymbol = EQUALITY_SYMBOLS.EQUALS,
+    equalitySymbol = EqualitySymbol.eq,
   }: PropertyOptions = {}
 ) => {
-  if (!ALLOWABLE_EQUALITY_SYMBOLS.includes(equalitySymbol)) {
+  if (!AllowableEqualitySymbols.includes(equalitySymbol)) {
     throw new Error(`${equalitySymbol} is not a valid symbol`)
   }
-  if (equalitySymbol !== EQUALITY_SYMBOLS.EQUALS && type === ORMType.string) {
+  if (equalitySymbol !== EqualitySymbol.eq && type === ORMType.string) {
     throw new Error(`Cannot use a non = symbol for a string type`)
   }
   if (!type) {
@@ -97,7 +98,13 @@ fu([
     'OR',
     [property('s3', '123'), 'AND', property('s5', '098')],
     'OR',
-    [property('s4', 'abc'), 'AND', property('s5', '098')],
+    [
+      property('s4', 'abc'),
+      'AND',
+      property('s5', '098'),
+      'AND',
+      property('s6', '1111'),
+    ],
   ],
 ])
 

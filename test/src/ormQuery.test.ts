@@ -17,7 +17,7 @@ import {
   DatesBeforeStatement,
   OrmQueryBuilder,
   BooleanChains,
-  EQUALITY_SYMBOLS,
+  EqualitySymbol,
   ORMType,
 } from '../../src/types'
 
@@ -30,7 +30,7 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
     options: {
       caseSensitive: false,
       startsWith: false,
-      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+      equalitySymbol: EqualitySymbol.eq,
       endsWith: false,
     },
   },
@@ -42,7 +42,7 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
     options: {
       caseSensitive: false,
       startsWith: true,
-      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+      equalitySymbol: EqualitySymbol.eq,
       endsWith: false,
     },
   },
@@ -54,7 +54,7 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
     options: {
       caseSensitive: true,
       startsWith: false,
-      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+      equalitySymbol: EqualitySymbol.eq,
       endsWith: false,
     },
   },
@@ -66,7 +66,7 @@ const TEST_OBJS: { [s: string]: PropertyStatement } = {
     options: {
       caseSensitive: false,
       startsWith: false,
-      equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+      equalitySymbol: EqualitySymbol.eq,
       endsWith: true,
     },
   },
@@ -382,7 +382,7 @@ describe('/src/ormQuery.ts', () => {
         assert.throws(() => {
           ormQueryBuilder().property('name', 'value', {
             type: ORMType.string,
-            equalitySymbol: EQUALITY_SYMBOLS.GTE,
+            equalitySymbol: EqualitySymbol.gte,
           })
         })
       })
@@ -390,7 +390,7 @@ describe('/src/ormQuery.ts', () => {
         assert.throws(() => {
           ormQueryBuilder().property('name', 'value', {
             type: ORMType.string,
-            equalitySymbol: EQUALITY_SYMBOLS.GT,
+            equalitySymbol: EqualitySymbol.gt,
           })
         })
       })
@@ -398,7 +398,7 @@ describe('/src/ormQuery.ts', () => {
         assert.throws(() => {
           ormQueryBuilder().property('name', 'value', {
             type: ORMType.string,
-            equalitySymbol: EQUALITY_SYMBOLS.LTE,
+            equalitySymbol: EqualitySymbol.lte,
           })
         })
       })
@@ -406,7 +406,7 @@ describe('/src/ormQuery.ts', () => {
         assert.throws(() => {
           ormQueryBuilder().property('name', 'value', {
             type: ORMType.string,
-            equalitySymbol: EQUALITY_SYMBOLS.LT,
+            equalitySymbol: EqualitySymbol.lt,
           })
         })
       })

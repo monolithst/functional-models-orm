@@ -7,7 +7,6 @@
   "scripts": {
     "commit": "cz",
     "watch": "tsc -w --noEmit",
-    "test1": "mocha -r ts-node/register test/**/*.test.ts",
     "test:coverage1": "nyc npm run test",
     "test": "mocha -r tsx --extensions ts,tsx 'test/**/*.{ts,tsx}'",
     "test:coverage": "TS_NODE_PROJECT=tsconfig.test.json nyc npm run test",
