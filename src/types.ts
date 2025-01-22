@@ -291,22 +291,6 @@ type PropertyStatement = Readonly<{
 type PageValue = any
 type TakeValue = number
 
-type PaginationStatement = Readonly<{
-  type: 'page'
-  value: PageValue
-}>
-
-type TakeStatement = Readonly<{
-  type: 'take'
-  value: TakeValue
-}>
-
-type SortStatement = Readonly<{
-  type: 'sort'
-  key: string
-  order: boolean
-}>
-
 type DatesAfterStatement = Readonly<{
   type: 'datesAfter'
   key: string
@@ -326,60 +310,6 @@ type DatesBeforeStatement = Readonly<{
     equalToAndBefore: boolean
   }
 }>
-
-type AndStatement = Readonly<{
-  type: 'and'
-}>
-
-type OrStatement = Readonly<{
-  type: 'or'
-}>
-
-type OrmQuery = Readonly<{
-  properties: {
-    readonly [s: string]: PropertyStatement
-  }
-  datesAfter?: {
-    readonly [s: string]: DatesAfterStatement
-  }
-  datesBefore?: {
-    readonly [s: string]: DatesBeforeStatement
-  }
-  sort?: SortStatement
-  take?: TakeValue
-  page?: PageValue
-  chain: readonly OrmQueryStatement[]
-}>
-
-type OrChain = {}
-
-type LinkStatement = {
-  statements: OrmQueryStatement[]
-  link: 'and' | 'or'
-}
-
-type QueryStatement = {
-  andStatements: QueryStatement[]
-  orStatements: QueryStatement[]
-  thisStatement: OrmQueryStatement
-}
-
-type OrmQuery2 = Readonly<{
-  andStatements: QueryStatement[]
-  sort?: SortStatement
-  take?: TakeValue
-  page?: PageValue
-}>
-
-type OrmQueryStatement =
-  | DatesAfterStatement
-  | DatesBeforeStatement
-  | SortStatement
-  | TakeStatement
-  | PaginationStatement
-  | PropertyStatement
-  | AndStatement
-  | OrStatement
 
 type OrmPropertyConfig<T extends Arrayable<DataValue>> = PropertyConfig<T> &
   Readonly<{
@@ -459,6 +389,90 @@ type BooleanChains = Readonly<{
   orChains: PropertyStatement[][]
 }>
 
+type TakeStatement = number
+type SortStatement = {
+  key,
+  order: boolean,
+}
+
+type Pagination = any
+
+
+type SearchQuery = {
+  take?: TakeStatement
+  sort?: SortStatement
+  page?: PaginationStatement
+  query: readonly QueryTokens[]
+}
+
+type QueryStatement =
+  | PropertyStatement
+  | DatesAfterStatement
+  | DatesBeforeStatement
+
+type LinkToken = 'AND' | 'OR'
+type QueryTokens = QueryTokens[] | LinkToken | QueryStatement
+
+/**
+ * An inbetween or ending type to a builder creating a SearchQuery
+ */
+type BuilderV2Link = {
+  and: () => BuilderV2
+  or: () => BuilderV2
+  pagination: (value: any) => BuilderV2Link
+  sort: (key: string, isAscending?: boolean) => BuilderV2Link
+  take: (count: number) => BuilderV2Link
+  compile: () => SearchQuery
+}
+
+/**
+ * A function that can either take a builder or raw QueryTokens[] and create a sub-query.
+ * @param builder - Can be either a BuilderV2 or a hand written Query
+ **/
+type SubBuilderFunction = (
+  builder: BuilderV2 | readonly QueryTokens[]
+) => Omit<SearchQuery, 'take' | 'sort' | 'page'>
+
+/**
+ * A Builder for V2 Queries.
+ */
+type BuilderV2 = {
+  complex: (subBuilderFunc: SubBuilderFunction) => BuilderV2Link 
+  datesAfter: (
+    key: string,
+    jsDate: Date | string,
+    {
+      valueType,
+      equalToAndAfter,
+    }: { valueType?: ORMType; equalToAndAfter?: boolean }
+  ) => BuilderV2Link
+  datesBefore: (
+    key: string,
+    jsDate: Date | string,
+    {
+      valueType,
+      equalToAndBefore,
+    }: { valueType?: ORMType; equalToAndBefore?: boolean }
+  ) => BuilderV2Link
+  property: (
+    name: string,
+    value: any,
+    {
+      caseSensitive,
+      startsWith,
+      endsWith,
+      type,
+      equalitySymbol,
+    }?: {
+      caseSensitive?: boolean
+      startsWith?: boolean
+      endsWith?: boolean
+      type?: ORMType
+      equalitySymbol?: EqualitySymbol
+    }
+  ) => BuilderV2Link
+}
+
 export {
   OrmQuery,
   OrmQueryStatement,
@@ -492,4 +506,10 @@ export {
   OrmModelInstanceExtensions,
   OrmModelFactoryOptionsExtensions,
   MinimumOrmModelDefinition,
+  BuilderV2,
+  BuilderV2Link,
+  SearchQuery,
+  QueryStatement,
+  LinkToken,
+  QueryTokens,
 }
