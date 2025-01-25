@@ -116,7 +116,7 @@ type OrmModelExtensions<
     Maybe<OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>>
   >
   search: <TData extends DataDescription>(
-    query: OrmQuery
+    query: SearchQuery
   ) => Promise<
     OrmSearchResult<
       TData,
@@ -124,7 +124,7 @@ type OrmModelExtensions<
     >
   >
   searchOne: <TData extends DataDescription>(
-    query: OrmQuery
+    query: Omit<SearchQuery, 'take'>
   ) => Promise<
     | OrmModelInstance<TData, TModelExtensions, TModelInstanceExtensions>
     | undefined
@@ -245,7 +245,7 @@ type DatastoreProvider = Readonly<{
     TModelInstanceExtensions extends object = object,
   >(
     model: OrmModel<TData, TModelExtensions, TModelInstanceExtensions>,
-    query: OrmQuery
+    query: SearchQuery
   ) => Promise<DatastoreSearchResult<TData>>
   bulkInsert?: <
     TData extends DataDescription,
@@ -288,9 +288,6 @@ type PropertyStatement = Readonly<{
   }
 }>
 
-type PageValue = any
-type TakeValue = number
-
 type DatesAfterStatement = Readonly<{
   type: 'datesAfter'
   key: string
@@ -322,51 +319,6 @@ type OrmValidatorContext = Readonly<{
 }> &
   ValidatorContext
 
-type OrmQueryBuilder = Readonly<{
-  /*TODO:
-  In the next major iteration we need to add the concept of a complexStatement()
-  A complex statement allows for nested AND/OR statements.
-  */
-  compile: () => OrmQuery
-  datesAfter: (
-    key: string,
-    jsDate: Date | string,
-    {
-      valueType,
-      equalToAndAfter,
-    }: { valueType?: ORMType; equalToAndAfter?: boolean }
-  ) => OrmQueryBuilder
-  datesBefore: (
-    key: string,
-    jsDate: Date | string,
-    {
-      valueType,
-      equalToAndBefore,
-    }: { valueType?: ORMType; equalToAndBefore?: boolean }
-  ) => OrmQueryBuilder
-  property: (
-    name: string,
-    value: any,
-    {
-      caseSensitive,
-      startsWith,
-      endsWith,
-      type,
-      equalitySymbol,
-    }?: {
-      caseSensitive?: boolean
-      startsWith?: boolean
-      endsWith?: boolean
-      type?: ORMType
-      equalitySymbol?: EqualitySymbol
-    }
-  ) => OrmQueryBuilder
-  pagination: (value: any) => OrmQueryBuilder
-  sort: (key: string, isAscending?: boolean) => OrmQueryBuilder
-  take: (count: number) => OrmQueryBuilder
-  and: () => OrmQueryBuilder
-  or: () => OrmQueryBuilder
-}>
 
 type PropertyOptions = {
   caseSensitive?: boolean
@@ -376,26 +328,19 @@ type PropertyOptions = {
   equalitySymbol?: EqualitySymbol
 }
 
-type BuilderFlowFunction = (builder: OrmQueryBuilder) => OrmQueryBuilder
-
 type Orm = {
   Model: OrmModelFactory
   fetcher: ModelInstanceFetcher<OrmModelExtensions, OrmModelInstanceExtensions>
   datastoreProvider: DatastoreProvider
 }
 
-type BooleanChains = Readonly<{
-  ands: (PropertyStatement | DatesBeforeStatement | DatesAfterStatement)[]
-  orChains: PropertyStatement[][]
-}>
-
 type TakeStatement = number
 type SortStatement = {
-  key,
+  key: string,
   order: boolean,
 }
 
-type Pagination = any
+type PaginationStatement = any
 
 
 type SearchQuery = {
@@ -411,7 +356,7 @@ type QueryStatement =
   | DatesBeforeStatement
 
 type LinkToken = 'AND' | 'OR'
-type QueryTokens = QueryTokens[] | LinkToken | QueryStatement
+type QueryTokens = readonly QueryTokens[][] | readonly QueryTokens[] | LinkToken | QueryStatement
 
 /**
  * An inbetween or ending type to a builder creating a SearchQuery
@@ -433,10 +378,17 @@ type SubBuilderFunction = (
   builder: BuilderV2 | readonly QueryTokens[]
 ) => Omit<SearchQuery, 'take' | 'sort' | 'page'>
 
+type BuilderV2 = InnerBuilderV2 & {
+  pagination: (value: any) => BuilderV2Link
+  sort: (key: string, isAscending?: boolean) => BuilderV2Link
+  take: (count: number) => BuilderV2Link
+  compile: () => SearchQuery
+}
+
 /**
  * A Builder for V2 Queries.
  */
-type BuilderV2 = {
+type InnerBuilderV2 = {
   complex: (subBuilderFunc: SubBuilderFunction) => BuilderV2Link 
   datesAfter: (
     key: string,
@@ -474,10 +426,6 @@ type BuilderV2 = {
 }
 
 export {
-  OrmQuery,
-  OrmQueryStatement,
-  OrStatement,
-  AndStatement,
   PropertyStatement,
   SortStatement,
   DatesAfterStatement,
@@ -493,23 +441,22 @@ export {
   OrmPropertyConfig,
   DatastoreSearchResult,
   OrmValidatorContext,
-  OrmQueryBuilder,
   OrmSearchResult,
   EqualitySymbol,
   ORMType,
   AllowableEqualitySymbols,
   PropertyOptions,
-  BuilderFlowFunction,
   Orm,
-  BooleanChains,
   OrmModelExtensions,
   OrmModelInstanceExtensions,
   OrmModelFactoryOptionsExtensions,
   MinimumOrmModelDefinition,
   BuilderV2,
   BuilderV2Link,
+  SubBuilderFunction,
   SearchQuery,
   QueryStatement,
   LinkToken,
   QueryTokens,
+  InnerBuilderV2,
 }

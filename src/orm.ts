@@ -17,7 +17,7 @@ import {
   OrmModelInstance,
   OrmModel,
   DatastoreProvider,
-  OrmQuery,
+  SearchQuery,
   OrmModelFactory,
   Orm,
   OrmModelExtensions,
@@ -26,7 +26,7 @@ import {
   OrmSearchResult,
   MinimumOrmModelDefinition,
 } from './types'
-import { ormQueryBuilder } from './ormQuery'
+import { builderV2 } from './ormQuery'
 
 const { ValidationError } = errors
 
@@ -106,7 +106,7 @@ const create = ({
     const theOptions = _convertOptions(options)
 
     const search = <TOverride extends DataDescription>(
-      ormQuery: OrmQuery
+      ormQuery: SearchQuery
     ): Promise<OrmSearchResult<TOverride>> => {
       return datastoreProvider.search(model, ormQuery).then(result => {
         // @ts-ignore
@@ -120,7 +120,7 @@ const create = ({
     }
 
     const searchOne = <TOverride extends DataDescription>(
-      ormQuery: OrmQuery
+      ormQuery: SearchQuery
     ) => {
       ormQuery = merge(ormQuery, { take: 1 })
       return search<TOverride>(ormQuery).then(({ instances }) => {
@@ -294,7 +294,10 @@ const create = ({
 
     const _countRecursive = async (page = null): Promise<number> => {
       const results = await model.search(
-        ormQueryBuilder().pagination(page).compile()
+        builderV2({
+          page,
+          query: [],
+        }).compile()
       )
       const length1 = results.instances.length
       // Don't run it again if the page is the same as a previous run.

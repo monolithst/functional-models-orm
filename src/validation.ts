@@ -7,18 +7,17 @@ import {
   JsonAble,
   ModelValidatorComponent,
 } from 'functional-models'
-import { ormQueryBuilder } from './ormQuery'
+import {builderV2, take} from './ormQuery'
 import {
-  OrmQuery,
+  SearchQuery,
   OrmValidatorContext,
   OrmModelInstance,
-  OrmModel,
   OrmModelExtensions,
   OrmModelInstanceExtensions,
 } from './types'
 
 const _doUniqueCheck = async <T extends DataDescription>(
-  query: OrmQuery,
+  query: SearchQuery,
   instance: OrmModelInstance<T>,
   instanceData: T | JsonAble,
   buildErrorMessage: () => ComponentValidationErrorResponse
@@ -78,9 +77,10 @@ const uniqueTogether = <T extends DataDescription>(
           return b.property(key, value, { caseSensitive: false }).and()
         }
       })
-    )(ormQueryBuilder())
-      .take(2)
-      .compile()
+    )(builderV2({
+      take: take(2),
+      query: []
+    })).compile()
     return _doUniqueCheck<T>(query, instance, instanceData, () => {
       return propertyKeyArray.length > 1
         ? `${propertyKeyArray.join(

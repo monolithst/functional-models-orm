@@ -18,11 +18,12 @@ import {
 } from 'functional-models'
 import {
   DatastoreProvider,
-  OrmQuery,
+  SearchQuery,
   DatesBeforeStatement,
   DatastoreSearchResult,
-  OrmModel,
+  OrmModel, QueryTokens, DatesAfterStatement, PropertyStatement,
 } from '../types'
+import {threeitize} from "../ormQuery";
 
 const _getDbEntryInfo = async <T extends DataDescription>(
   instance: ModelInstance<T>
@@ -53,7 +54,7 @@ type SimpleObj = {
 }
 
 type MemoryDatastoreProviderProps = Readonly<{
-  getSeedPrimaryKeyName?: () => string
+  getSeedPrimaryKeyName?: (model: ModelType<any>) => string
   onDbChanged: (db: ModelsDb) => void
 }>
 
@@ -173,13 +174,39 @@ const create = (
     '<': (name, value) => obj => obj[name] < value,
   }
 
+  type ValidationFunc = (token: QueryTokens) => (() => boolean)
+
+  const _createQuery = (statement: DatesAfterStatement|DatesBeforeStatement|PropertyStatement) => {
+
+  }
+
+  const _buildBooleans = (func: any) => (tokens: QueryTokens[]) => {
+    const threes = threeitize(tokens)
+    return threes.toReversed().reduce((acc, [a, l, b]) => {
+      if (l !== 'AND' && l !== 'OR') {
+        throw new Error(`${l} is not a valid symbol`)
+      }
+      const aQuery = _createQuery(a)
+      // After the first time, acc is always the previous.
+      if (Object.entries(acc).length > 0) {
+        return {
+          [`$${l.toLowerCase()}`]: [aQuery, acc],
+        }
+      }
+      const bQuery = _createQuery(b)
+      return {
+        [`$${l.toLowerCase()}`]: [aQuery, bQuery],
+      }
+    }, {})
+  }
+
   const search = <
     T extends DataDescription,
     TModelExtensions extends object = object,
     TModelInstanceExtensions extends object = object,
   >(
     model: ModelType<T, TModelExtensions, TModelInstanceExtensions>,
-    ormQuery: OrmQuery
+    ormQuery: SearchQuery
   ): Promise<DatastoreSearchResult<T>> => {
     return Promise.resolve().then(() => {
       const modelName = model.getName()
