@@ -336,13 +336,7 @@ type OrmQueryBuilder = Readonly<{
   property: (
     name: string,
     value: any,
-    {
-      caseSensitive,
-      startsWith,
-      endsWith,
-      type,
-      equalitySymbol,
-    }?: {
+    props?: {
       caseSensitive?: boolean
       startsWith?: boolean
       endsWith?: boolean

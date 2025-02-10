@@ -16,11 +16,13 @@ import {
   PrimaryKeyType,
   TypedJsonObj,
 } from 'functional-models/interfaces'
+import { createBooleanChains } from '../ormQuery'
 import {
   DatastoreProvider,
   OrmQuery,
   DatesBeforeStatement,
   DatastoreSearchResult,
+  PropertyStatement,
 } from '../interfaces'
 
 const _getDbEntryInfo = async <
@@ -166,36 +168,13 @@ const memoryDatastoreProvider = (
   ): Promise<DatastoreSearchResult<T>> => {
     return Promise.resolve().then(() => {
       const modelName = model.getName()
-      const propertyQueries = ormQuery.properties || {}
-      const searches = Object.values(propertyQueries).map(partial => {
-        if (partial.valueType === 'string' || !partial.valueType) {
-          const flag = partial.options.caseSensitive ? '' : 'i'
-          const value = partial.options.startsWith
-            ? `^${partial.value}`
-            : partial.options.endsWith
-              ? `${partial.value}$`
-              : `^${partial.value}$`
-          const reg = new RegExp(value, flag)
-          return (obj: SimpleObj) => reg.test(obj[partial.name])
-        } else if (partial.valueType === 'number') {
-          const symbol = partial.options.equalitySymbol
-          if (!symbol) {
-            throw new Error(`No symbol provided!`)
-          }
-          const operation = _equalitySymbolToOperation[symbol]
-          if (!operation) {
-            throw new Error(`Symbol ${symbol} is not supported`)
-          }
-          return operation(partial.name, partial.value)
-        }
-        return () => undefined
-      })
       if (!(modelName in db)) {
         return {
           instances: [],
           page: null,
         }
       }
+      const chains = createBooleanChains(ormQuery)
       type ValidationFunc = (obj: SimpleObj) => boolean
       const models = db[modelName] as {
         // eslint-disable-next-line functional/prefer-readonly-type
@@ -236,12 +215,82 @@ const memoryDatastoreProvider = (
         },
         [] as readonly ValidationFunc[]
       )
+
+      const _propertyMatch = (partial: PropertyStatement) => {
+        if (partial.valueType === 'string' || !partial.valueType) {
+          const flag = partial.options.caseSensitive ? '' : 'i'
+          const value = partial.options.startsWith
+            ? `^${partial.value}`
+            : partial.options.endsWith
+              ? `${partial.value}$`
+              : `^${partial.value}$`
+          const reg = new RegExp(value, flag)
+          return (obj: SimpleObj) => reg.test(obj[partial.name])
+        } else if (partial.valueType === 'number') {
+          const symbol = partial.options.equalitySymbol
+          if (!symbol) {
+            throw new Error(`No symbol provided!`)
+          }
+          const operation = _equalitySymbolToOperation[symbol]
+          if (!operation) {
+            throw new Error(`Symbol ${symbol} is not supported`)
+          }
+          return operation(partial.name, partial.value)
+        }
+        return () => false
+      }
+
+      const andSearches = chains.ands.reduce(
+        (acc, s) => {
+          if (s.type !== 'property') {
+            return acc
+          }
+          return acc.concat(_propertyMatch(s))
+        },
+        [] as ((obj: SimpleObj) => boolean)[]
+      )
+
+      const orSearches = chains.orChains.reduce(
+        (acc, s) => {
+          return acc.concat((obj: SimpleObj) => {
+            return s.some(inside => _propertyMatch(inside)(obj))
+          })
+        },
+        [] as ((obj: SimpleObj) => boolean)[]
+      )
+
+      const andSearch = (o: SimpleObj) => {
+        return andSearches.every(a => a(o))
+      }
+
+      const orSearch = (o: SimpleObj) => {
+        return orSearches.some(a => a(o))
+      }
+
+      const justPropertyQuery = (o: SimpleObj) => {
+        // Sometimes we have no chain but have properties. This is a legacy hack.
+        if (andSearches.length < 1 && orSearches.length < 1) {
+          return Object.entries(ormQuery.properties)
+            .map(([k, v]) => _propertyMatch(v))
+            .every(x => x(o))
+        }
+        // Ignore this entirely
+        return true
+      }
+
       const results = flatten(values(models)).filter(obj => {
-        if (searches.length > 0) {
-          const match = searches.find(method => method(obj as SimpleObj))
-          if (!match) {
+        if (andSearches.length > 0) {
+          if (!andSearch(obj)) {
             return false
           }
+        }
+        if (orSearches.length > 0) {
+          if (!orSearch(obj)) {
+            return false
+          }
+        }
+        if (!justPropertyQuery(obj)) {
+          return false
         }
         const beforeMatched =
           beforeFilters.length > 0
