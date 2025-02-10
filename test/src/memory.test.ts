@@ -5,6 +5,7 @@ import { EQUALITY_SYMBOLS, ORMType } from '../../src/constants'
 import orm from '../../src/orm'
 import { DatastoreProvider, OrmModelFactory } from '../../src/interfaces'
 import { ValueOptional } from 'functional-models/interfaces'
+import { ormQueryBuilder } from '../../src/ormQuery'
 
 type TestModelType = { name: string }
 type TestModelType2 = { value: number }
@@ -146,23 +147,18 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const TEST_MODEL1 = createTestModel1(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'name',
-                value: 'Unit-Test',
-                valueType: ORMType.string,
-                options: {
-                  caseSensitive: true,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
-                  endsWith: false,
-                  startsWith: false,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            TEST_MODEL1,
+            ormQueryBuilder()
+              .property('name', 'Unit-Test', {
+                type: ORMType.string,
+                caseSensitive: true,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                endsWith: false,
+                startsWith: false,
+              })
+              .compile()
+          )
         ).instances
         const expected: any[] = []
         assert.deepEqual(actual, expected)
@@ -174,28 +170,49 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const TEST_MODEL1 = createTestModel1(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'name',
-                value: 'unit-test',
-                valueType: ORMType.string,
-                options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
-                  endsWith: false,
-                  startsWith: false,
-                  caseSensitive: true,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            TEST_MODEL1,
+            ormQueryBuilder()
+              .property('name', 'unit-test', {
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                type: ORMType.string,
+                endsWith: false,
+                startsWith: false,
+                caseSensitive: true,
+              })
+              .compile()
+          )
         ).instances
         const expected = [{ id: '123', name: 'unit-test' }]
         assert.deepEqual(actual, expected)
       })
       it('should find 1 instance when using a caseSensitive search even though there are two objects', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL1_NAME]: [
+            { id: '123', name: 'unit-test' },
+            { id: '234', name: 'unit-test-2' },
+          ],
+        })
+        const { BaseModel } = setupMocks(datastoreProvider)
+        const TEST_MODEL1 = createTestModel1(BaseModel)
+        const actual = (
+          await datastoreProvider.search(
+            TEST_MODEL1,
+            ormQueryBuilder()
+              .property('name', 'unit-test', {
+                caseSensitive: true,
+                type: ORMType.string,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                endsWith: false,
+                startsWith: false,
+              })
+              .compile()
+          )
+        ).instances
+        const expected = [{ id: '123', name: 'unit-test' }]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 1 instance when using a legacySearch that doesnt have a chain', async () => {
         const datastoreProvider = datastore({
           [TEST_MODEL1_NAME]: [
             { id: '123', name: 'unit-test' },
@@ -237,24 +254,19 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const TEST_MODEL1 = createTestModel1(BaseModel)
         const actual = (
-          await datastoreProvider.search(TEST_MODEL1, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'name',
-                value: 'unit-test',
-                valueType: ORMType.string,
-                options: {
-                  caseSensitive: false,
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
-                  endsWith: false,
-                  startsWith: false,
-                },
-              },
-            },
-            take: 2,
-            chain: [],
-          })
+          await datastoreProvider.search(
+            TEST_MODEL1,
+            ormQueryBuilder()
+              .property('name', 'unit-test', {
+                caseSensitive: false,
+                type: ORMType.string,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+                endsWith: false,
+                startsWith: false,
+              })
+              .take(2)
+              .compile()
+          )
         ).instances
         const expected = [
           { id: '123', name: 'unit-test' },
@@ -273,20 +285,15 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(model, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'value',
-                value: 2,
-                valueType: ORMType.number,
-                options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.GT,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            model,
+            ormQueryBuilder()
+              .property('value', 2, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.GT,
+              })
+              .compile()
+          )
         ).instances
         const expected = [
           { id: '234', value: 3 },
@@ -339,20 +346,15 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(model, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'value',
-                value: 2,
-                valueType: ORMType.number,
-                options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.LT,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            model,
+            ormQueryBuilder()
+              .property('value', 2, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.LT,
+              })
+              .compile()
+          )
         ).instances
         const expected = [{ id: '012', value: 1 }]
         assert.deepEqual(actual, expected)
@@ -369,20 +371,15 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(model, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'value',
-                value: 2,
-                valueType: ORMType.number,
-                options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.LTE,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            model,
+            ormQueryBuilder()
+              .property('value', 2, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.LTE,
+              })
+              .compile()
+          )
         ).instances
         const expected = [
           { id: '123', value: 2 },
@@ -402,22 +399,56 @@ describe('/src/datastore/memory.js', () => {
         const { BaseModel } = setupMocks(datastoreProvider)
         const model = createTestModel2(BaseModel)
         const actual = (
-          await datastoreProvider.search(model, {
-            properties: {
-              name: {
-                type: 'property',
-                name: 'value',
-                value: 2,
-                valueType: ORMType.number,
-                options: {
-                  equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
-                },
-              },
-            },
-            chain: [],
-          })
+          await datastoreProvider.search(
+            model,
+            ormQueryBuilder()
+              .property('value', 2, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+              })
+              .compile()
+          )
         ).instances
         const expected = [{ id: '123', value: 2 }]
+        assert.deepEqual(actual, expected)
+      })
+      it('should find 3 instances when when dealing with multiple or queries', async () => {
+        const datastoreProvider = datastore({
+          [TEST_MODEL2_NAME]: [
+            { id: '012', value: 1 },
+            { id: '123', value: 2 },
+            { id: '234', value: 3 },
+            { id: '345', value: 4 },
+          ],
+        })
+        const { BaseModel } = setupMocks(datastoreProvider)
+        const model = createTestModel2(BaseModel)
+        const actual = (
+          await datastoreProvider.search(
+            model,
+            ormQueryBuilder()
+              .property('value', 2, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+              })
+              .or()
+              .property('value', 3, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+              })
+              .or()
+              .property('value', 1, {
+                type: ORMType.number,
+                equalitySymbol: EQUALITY_SYMBOLS.EQUALS,
+              })
+              .compile()
+          )
+        ).instances
+        const expected = [
+          { id: '123', value: 2 },
+          { id: '234', value: 3 },
+          { id: '012', value: 1 },
+        ]
         assert.deepEqual(actual, expected)
       })
     })
